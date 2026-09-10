@@ -10,8 +10,14 @@
     "close": "Закрыть"
   },
   "home": {
-    "slogan": "Generative Learning in Multi-Agent Interactive Classroom",
-    "greetingWithName": "Привет, {{name}}"
+    "slogan": "Интерактивная мультиагентная обучающая платформа на базе ИИ",
+    "greetingWithName": "Привет, {{name}}",
+    "heroTitle": "Spark Classroom",
+    "heroSubtitle": "Интерактивная мультиагентная обучающая платформа на базе ИИ",
+    "askPromptTitle": "Можно спросить, например:",
+    "samplePrompt1": "«Объясни, как работают компоненты Vue 3, с примером из практики»",
+    "samplePrompt2": "«Объясни преобразование Фурье на доске»",
+    "samplePrompt3": "«Или загрузите файл — агенты разберут его вместе...»"
   },
   "toolbar": {
     "pdfParser": "Парсер",
@@ -44,7 +50,15 @@
     "ttsPreview": "Прослушать",
     "ttsPreviewing": "Воспроизведение...",
     "interactiveModeHint": "Включить интерактивный режим для более практического контента",
-    "interactiveModeLabel": "Интерактивный режим"
+    "interactiveModeLabel": "Интерактивный режим",
+    "deepThinking": "Глубокое размышление",
+    "startLearning": "Начать обучение",
+    "selectLearningMode": "Выбрать режим",
+    "modeStandard": "Стандартный курс",
+    "modeStandardHint": "Структурный курс из слайдов и текста, подходит для теории",
+    "modeInteractive": "Глубокое взаимодействие",
+    "modeVocational": "Профессиональная задача",
+    "modeVocationalHint": "Запустить профессиональную практику из текущего поля ввода"
   },
   "export": {
     "pptx": "Экспорт PPTX",
@@ -1008,7 +1022,10 @@
     "deleteFolderConfirmRemove": "Папка и её курсы (включая историю чата) будут удалены.",
     "notFound": "Курс не найден",
     "notFoundDesc": "Этот курс не существует или был удалён.",
-    "backToHome": "На главную"
+    "backToHome": "На главную",
+    "viewAll": "Смотреть все",
+    "noDescription": "Описания курса пока нет",
+    "scenesSuffix": "сцен"
   },
   "upload": {
     "pdfSizeLimit": "Поддержка PDF до 50 МБ",

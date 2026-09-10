@@ -10,8 +10,14 @@
     "close": "Schließen"
   },
   "home": {
-    "slogan": "Generatives Lernen im interaktiven Lernraum mit mehreren KI-Agenten",
-    "greetingWithName": "Hallo, {{name}}"
+    "slogan": "KI-gestützte interaktive Multi-Agent-Lernplattform",
+    "greetingWithName": "Hallo, {{name}}",
+    "heroTitle": "Spark Classroom",
+    "heroSubtitle": "KI-gestützte interaktive Multi-Agent-Lernplattform",
+    "askPromptTitle": "So kannst du mich fragen:",
+    "samplePrompt1": "„Erklär mir die Funktionsweise von Vue-3-Komponenten mit Praxisbeispiel“",
+    "samplePrompt2": "„Erklär mir die Fourier-Transformation am Whiteboard“",
+    "samplePrompt3": "„Oder lade eine Datei hoch und lass die Agenten sie gemeinsam auswerten...“"
   },
   "toolbar": {
     "pdfParser": "Parser",
@@ -44,7 +50,15 @@
     "ttsPreview": "Vorschau",
     "ttsPreviewing": "Wird abgespielt...",
     "interactiveModeHint": "Aktiviere den interaktiven Modus, damit bevorzugt interaktive Inhalte erzeugt werden",
-    "interactiveModeLabel": "Interaktiver Modus"
+    "interactiveModeLabel": "Interaktiver Modus",
+    "deepThinking": "Intensiv nachdenken",
+    "startLearning": "Lernen starten",
+    "selectLearningMode": "Lernmodus wählen",
+    "modeStandard": "Standardlernen",
+    "modeStandardHint": "Strukturierter Kurs aus Folien und Text – gut für Theorie",
+    "modeInteractive": "Tiefe Interaktion",
+    "modeVocational": "Berufliche Aufgabe",
+    "modeVocationalHint": "Berufliche Praxisübung aus dem aktuellen Eingabefeld starten"
   },
   "export": {
     "pptx": "PPTX exportieren",
@@ -1008,7 +1022,10 @@
     "deleteFolderConfirmRemove": "Dadurch werden der Ordner und seine Kurse einschließlich des Chatverlaufs gelöscht.",
     "notFound": "Kurs nicht gefunden",
     "notFoundDesc": "Dieser Kurs existiert nicht oder wurde gelöscht.",
-    "backToHome": "Zurück zur Startseite"
+    "backToHome": "Zurück zur Startseite",
+    "viewAll": "Alle anzeigen",
+    "noDescription": "Noch keine Kursbeschreibung",
+    "scenesSuffix": "Szenen"
   },
   "upload": {
     "pdfSizeLimit": "Unterstützt PDF-Dateien bis zu 50 MB",

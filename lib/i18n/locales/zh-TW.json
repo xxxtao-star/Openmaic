@@ -10,8 +10,14 @@
     "close": "關閉"
   },
   "home": {
-    "slogan": "多智能體互動課室中的生成式學習",
-    "greetingWithName": "嗨，{{name}}"
+    "slogan": "AI 驅動的多智能體互動學習平台",
+    "greetingWithName": "嗨，{{name}}",
+    "heroTitle": "芯火課堂",
+    "heroSubtitle": "AI 驅動的多智能體互動學習平台",
+    "askPromptTitle": "你可以這樣問我：",
+    "samplePrompt1": "「幫我講解 Vue3 元件的核心原理，並給出實戰案例」",
+    "samplePrompt2": "「用白板給我講解傅立葉轉換」",
+    "samplePrompt3": "「或者上傳檔案，讓多智能體為你共同分析...」"
   },
   "toolbar": {
     "pdfParser": "解析器",
@@ -44,7 +50,15 @@
     "ttsPreview": "試聽",
     "ttsPreviewing": "播放中...",
     "interactiveModeHint": "啟用互動優先模式以獲得更多實作內容",
-    "interactiveModeLabel": "互動模式"
+    "interactiveModeLabel": "互動模式",
+    "deepThinking": "深度思考",
+    "startLearning": "開始學習",
+    "selectLearningMode": "選擇學習模式",
+    "modeStandard": "標準課程",
+    "modeStandardHint": "結構化的圖文課件，適合系統性學習",
+    "modeInteractive": "深度互動",
+    "modeVocational": "職教任務",
+    "modeVocationalHint": "從目前輸入框提交職教實作訓練測試"
   },
   "export": {
     "pptx": "匯出 PPTX",
@@ -993,7 +1007,10 @@
     "deleteFolderAndCourses_other": "刪除資料夾和 {{count}} 門課程",
     "notFound": "找不到這門課程",
     "notFoundDesc": "課程不存在，或已被刪除。",
-    "backToHome": "返回首頁"
+    "backToHome": "返回首頁",
+    "viewAll": "查看全部",
+    "noDescription": "還沒有課程介紹",
+    "scenesSuffix": "個場景"
   },
   "upload": {
     "pdfSizeLimit": "支援最大50MB的PDF檔案",

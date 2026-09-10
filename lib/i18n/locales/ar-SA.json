@@ -10,8 +10,14 @@
     "close": "إغلاق"
   },
   "home": {
-    "slogan": "التعلّم التوليدي في فصل تفاعلي متعدد الوكلاء",
-    "greetingWithName": "مرحبًا، {{name}}"
+    "slogan": "منصة تعلّم تفاعلية متعددة الوكلاء مدعومة بالذكاء الاصطناعي",
+    "greetingWithName": "مرحبًا، {{name}}",
+    "heroTitle": "Spark Classroom",
+    "heroSubtitle": "منصة تعلّم تفاعلية متعددة الوكلاء مدعومة بالذكاء الاصطناعي",
+    "askPromptTitle": "يمكنك أن تسألني مثلاً:",
+    "samplePrompt1": "«اشرح لي كيفية عمل مكوّنات Vue 3 مع مثال عملي»",
+    "samplePrompt2": "«اشرح لي تحويل فورييه على السبورة»",
+    "samplePrompt3": "«أو ارفع ملفاً ودع الوكلاء يحللونه معاً...»"
   },
   "toolbar": {
     "pdfParser": "محلل PDF",
@@ -44,7 +50,15 @@
     "ttsTitle": "تحويل النص إلى كلام",
     "ttsHint": "اختر صوتًا للمعلم الذكي",
     "ttsPreview": "معاينة",
-    "ttsPreviewing": "جارٍ التشغيل..."
+    "ttsPreviewing": "جارٍ التشغيل...",
+    "deepThinking": "تفكير عميق",
+    "startLearning": "ابدأ التعلّم",
+    "selectLearningMode": "اختر وضع التعلّم",
+    "modeStandard": "التعلّم القياسي",
+    "modeStandardHint": "دورة منظّمة بالشرائح والنص، مناسبة للمواضيع النظرية",
+    "modeInteractive": "التفاعل العميق",
+    "modeVocational": "مهمة مهنية",
+    "modeVocationalHint": "تشغيل التدريب العملي المهني من مربع الإدخال الحالي"
   },
   "export": {
     "pptx": "تصدير PPTX",
@@ -1008,7 +1022,10 @@
     "deleteFolderAndCourses_other": "حذف المجلد و {{count}} دورة",
     "notFound": "لم يتم العثور على الدورة",
     "notFoundDesc": "هذه الدورة غير موجودة أو تم حذفها.",
-    "backToHome": "العودة إلى الصفحة الرئيسية"
+    "backToHome": "العودة إلى الصفحة الرئيسية",
+    "viewAll": "عرض الكل",
+    "noDescription": "لا يوجد وصف للدورة بعد",
+    "scenesSuffix": "مشاهد"
   },
   "upload": {
     "pdfSizeLimit": "يدعم ملفات PDF حتى 50 ميغابايت",

@@ -10,8 +10,14 @@
     "close": "閉じる"
   },
   "home": {
-    "slogan": "マルチエージェント対話型教室で生成的に学ぶ",
-    "greetingWithName": "こんにちは、{{name}}さん"
+    "slogan": "AI が駆動するマルチエージェント対話型学習プラットフォーム",
+    "greetingWithName": "こんにちは、{{name}}さん",
+    "heroTitle": "芯火課堂",
+    "heroSubtitle": "AI が駆動するマルチエージェント対話型学習プラットフォーム",
+    "askPromptTitle": "こんなふうに聞けます：",
+    "samplePrompt1": "「Vue3 コンポーネントの仕組みを実例つきで解説して」",
+    "samplePrompt2": "「ホワイトボードでフーリエ変換を説明して」",
+    "samplePrompt3": "「ファイルをアップロードすれば、複数のエージェントが一緒に分析します...」"
   },
   "toolbar": {
     "pdfParser": "パーサー",
@@ -44,7 +50,15 @@
     "ttsPreview": "プレビュー",
     "ttsPreviewing": "再生中...",
     "interactiveModeHint": "インタラクティブ優先モードを有効にして、より実践的なコンテンツを生成",
-    "interactiveModeLabel": "インタラクティブモード"
+    "interactiveModeLabel": "インタラクティブモード",
+    "deepThinking": "深く考える",
+    "startLearning": "学習を始める",
+    "selectLearningMode": "学習モードを選択",
+    "modeStandard": "標準コース",
+    "modeStandardHint": "スライドとテキストで構成された標準コース。理論の学習に最適",
+    "modeInteractive": "深いインタラクション",
+    "modeVocational": "職業訓練タスク",
+    "modeVocationalHint": "現在の入力欄から職業実習タスクを実行します"
   },
   "export": {
     "pptx": "PPTXエクスポート",
@@ -1008,7 +1022,10 @@
     "deleteFolderAndCourses_other": "フォルダと {{count}} 件のコースを削除",
     "notFound": "コースが見つかりません",
     "notFoundDesc": "このコースは存在しないか、すでに削除されています。",
-    "backToHome": "ホームに戻る"
+    "backToHome": "ホームに戻る",
+    "viewAll": "すべて見る",
+    "noDescription": "コースの説明はまだありません",
+    "scenesSuffix": "シーン"
   },
   "upload": {
     "pdfSizeLimit": "50MBまでのPDFファイルに対応しています",

@@ -10,8 +10,14 @@
     "close": "Fechar"
   },
   "home": {
-    "slogan": "Aprendizagem Generativa em Sala de Aula Interativa Multi-Agente",
-    "greetingWithName": "Olá, {{name}}"
+    "slogan": "Plataforma de aprendizagem interativa multiagente com IA",
+    "greetingWithName": "Olá, {{name}}",
+    "heroTitle": "Spark Classroom",
+    "heroSubtitle": "Plataforma de aprendizagem interativa multiagente com IA",
+    "askPromptTitle": "Você pode me perguntar coisas como:",
+    "samplePrompt1": "“Explique como funcionam os componentes do Vue 3, com um exemplo real”",
+    "samplePrompt2": "“Explique a transformada de Fourier no quadro branco”",
+    "samplePrompt3": "“Ou envie um arquivo e deixe os agentes analisarem juntos...”"
   },
   "toolbar": {
     "pdfParser": "Analisador",
@@ -44,7 +50,15 @@
     "ttsPreview": "Pré-visualizar",
     "ttsPreviewing": "Reproduzindo...",
     "interactiveModeHint": "Ative o modo interativo para conteúdos mais práticos",
-    "interactiveModeLabel": "Modo Interativo"
+    "interactiveModeLabel": "Modo Interativo",
+    "deepThinking": "Pensamento profundo",
+    "startLearning": "Começar a aprender",
+    "selectLearningMode": "Escolher modo de estudo",
+    "modeStandard": "Curso padrão",
+    "modeStandardHint": "Curso estruturado em slides e texto, ideal para teoria",
+    "modeInteractive": "Interação profunda",
+    "modeVocational": "Tarefa vocacional",
+    "modeVocationalHint": "Executar uma prática vocacional a partir da entrada atual"
   },
   "export": {
     "pptx": "Exportar PPTX",
@@ -1008,7 +1022,10 @@
     "deleteFolderConfirmRemove": "Isto remove a pasta e seus cursos, incluindo o histórico de chat.",
     "notFound": "Curso não encontrado",
     "notFoundDesc": "Este curso não existe ou foi excluído.",
-    "backToHome": "Voltar ao início"
+    "backToHome": "Voltar ao início",
+    "viewAll": "Ver tudo",
+    "noDescription": "Ainda sem descrição do curso",
+    "scenesSuffix": "cenas"
   },
   "upload": {
     "pdfSizeLimit": "Suporta arquivos PDF de até 50 MB",

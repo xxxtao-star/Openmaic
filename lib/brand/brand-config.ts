@@ -13,6 +13,10 @@ export interface BrandConfig {
   productName: string;
   /** Short name for space-constrained spots. */
   shortName: string;
+  /** Hero headline shown on the home page and the workspace landing. */
+  heroTitle: string;
+  /** One-line description under `heroTitle`. */
+  heroSubtitle: string;
   /** Horizontal logo asset under `public/`. */
   logoSrc: string;
   /** Whether `logoSrc` already carries the product wordmark. */
@@ -25,8 +29,10 @@ export interface BrandConfig {
 
 /** The default brand: the product itself, with no vendor overrides. */
 export const DEFAULT_BRAND: BrandConfig = {
-  productName: 'OpenMAIC',
-  shortName: 'OpenMAIC',
+  productName: '芯火课堂',
+  shortName: '芯火课堂',
+  heroTitle: '芯火课堂',
+  heroSubtitle: 'AI 驱动的多智能体互动学习平台',
   logoSrc: '/logo-horizontal.png',
   logoHasWordmark: true,
   markSrc: '/openmaic-mark.png',

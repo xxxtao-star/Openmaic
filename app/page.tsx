@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useDeferredValue } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  ArrowUp,
+  ArrowRight,
   Check,
   ChevronDown,
   ChevronRight,
@@ -37,7 +37,9 @@ import { Textarea as UITextarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { SettingsDialog } from '@/components/settings';
 import { GenerationToolbar } from '@/components/generation/generation-toolbar';
+import { DeepThinkingButton } from '@/components/generation/deep-thinking-button';
 import { AgentBar } from '@/components/agent/agent-bar';
+import Image from 'next/image';
 import { useTheme } from '@/lib/hooks/use-theme';
 import { nanoid } from 'nanoid';
 import { deleteDocumentBlob, storeDocumentBlob } from '@/lib/utils/image-storage';
@@ -74,11 +76,11 @@ import { displayNameWidth, FOLDER_NAME_MAX_WIDTH } from '@/lib/utils/folder-name
 import { FolderCard } from '@/components/discovery/folder-card';
 import { NewFolderDialog } from '@/components/discovery/folder-dialogs';
 import { MoveToFolderMenu } from '@/components/discovery/move-to-folder-menu';
-import { SlideThumbnail } from '@/components/slide-renderer/SlideThumbnail';
 import type { Slide } from '@openmaic/dsl';
 import { useMediaGenerationStore } from '@/lib/store/media-generation';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDraftCache } from '@/lib/hooks/use-draft-cache';
 import { SpeechButton } from '@/components/audio/speech-button';
 import { useImportClassroom } from '@/lib/import/use-import-classroom';
@@ -88,7 +90,6 @@ import {
   shouldShowVocationalTestUi,
 } from '@/lib/config/feature-flags';
 import { useImportPptx } from '@/lib/import/use-import-pptx';
-import { InteractiveModeButton } from '@/components/generation/interactive-mode-button';
 import { ProBadge } from '@/components/workbench/ProBadge';
 import { arrivedByProSwap, startProSwap } from '@/lib/workbench/pro-swap';
 import {
@@ -823,18 +824,16 @@ function HomePage() {
         />
       </div>
 
-      {/* ═══ Hero section: title + input (centered, wider) ═══ */}
+      {/* ═══ Hero section: brand lockup + input (centered, wider) ═══ */}
       <motion.div
         initial={heroEnter({ opacity: 0, y: 20 })}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
         className={cn('relative z-20 w-full max-w-[800px] flex flex-col items-center mt-[10vh]')}
       >
-        {/* ── Logo ── */}
-        <div className="relative" data-pro-morph="lockup">
-          <motion.img
-            src="/logo-horizontal.png"
-            alt="OpenMAIC"
+        {/* ── Brand lockup: drawn in code, so it scales with the viewport ── */}
+        <div className="relative w-[480px] sm:w-[600px] md:w-[720px]" data-pro-morph="lockup">
+          <motion.div
             initial={heroEnter({ opacity: 0, scale: 0.9 })}
             animate={{ opacity: 1, scale: 1 }}
             transition={{
@@ -843,8 +842,9 @@ function HomePage() {
               stiffness: 200,
               damping: 20,
             }}
-            className="h-12 md:h-16 mb-2 -ml-2 md:-ml-3"
-          />
+          >
+            <Image src="/hero-brand.png" alt="芯火课堂" width={720} height={340} priority className="w-full h-auto drop-shadow-2xl" />
+          </motion.div>
           {workbenchEntryEnabled ? (
             <div
               className="absolute left-full top-0 ml-1.5 mt-[10px] md:ml-2 md:mt-[14px]"
@@ -855,15 +855,6 @@ function HomePage() {
           ) : null}
         </div>
 
-        {/* ── Slogan ── */}
-        <motion.p
-          initial={heroEnter({ opacity: 0 })}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.25 }}
-          className="text-sm text-muted-foreground/60 mb-8"
-        >
-          {t('home.slogan')}
-        </motion.p>
 
         {/* ── Unified input area ── */}
         <motion.div
@@ -874,13 +865,55 @@ function HomePage() {
         >
           <div
             data-pro-morph="composer"
-            className="w-full rounded-2xl border border-border/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-black/[0.03] dark:shadow-black/20 transition-shadow focus-within:shadow-2xl focus-within:shadow-violet-500/[0.06]"
+            className="w-full rounded-2xl border border-indigo-400/25 bg-white/80 backdrop-blur-xl shadow-xl shadow-indigo-950/10 transition-shadow focus-within:border-indigo-400/45 focus-within:shadow-2xl focus-within:shadow-violet-500/[0.12] dark:border-indigo-400/20 dark:bg-slate-900/70 dark:shadow-black/30"
           >
-            {/* ── Greeting + Profile + Agents ── */}
-            <div className="relative z-20 flex items-start justify-between">
-              <GreetingBar />
-              <div className="pr-3 pt-3.5 shrink-0">
-                <AgentBar />
+            {/* ── Prompt title + learning-mode selector ── */}
+            <div className="relative z-20 flex items-center justify-between gap-3 px-4 pt-3.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <GreetingBar />
+                <span className="flex items-center gap-1.5 truncate text-[13px] font-medium text-foreground/85">
+                  {t('home.askPromptTitle')}
+                  <Sparkles className="size-3.5 shrink-0 text-violet-400" />
+                </span>
+              </div>
+              <div className="shrink-0">
+                <Select
+                  value={
+                    form.vocationalTestMode
+                      ? 'vocational'
+                      : form.interactiveMode
+                        ? 'interactive'
+                        : 'standard'
+                  }
+                  onValueChange={(val) => {
+                    if (val === 'vocational') {
+                      setForm((p) => ({ ...p, interactiveMode: true, vocationalTestMode: true }));
+                    } else if (val === 'interactive') {
+                      setForm((p) => ({ ...p, interactiveMode: true, vocationalTestMode: false }));
+                      try { localStorage.setItem('interactiveModeEnabled', 'true'); } catch { /* */ }
+                    } else {
+                      setForm((p) => ({ ...p, interactiveMode: false, vocationalTestMode: false }));
+                      try { localStorage.setItem('interactiveModeEnabled', 'false'); } catch { /* */ }
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-7 gap-1 rounded-full border border-border/50 bg-background/60 px-3 text-[12px] font-medium shadow-none backdrop-blur-sm focus-visible:ring-1 focus-visible:ring-violet-400/60 [&_svg]:size-3">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="end" className="min-w-[148px]">
+                    <SelectItem value="standard" className="py-1.5 text-xs">
+                      {t('toolbar.modeStandard')}
+                    </SelectItem>
+                    <SelectItem value="interactive" className="py-1.5 text-xs">
+                      {t('toolbar.modeInteractive')}
+                    </SelectItem>
+                    {showVocationalTestUi && (
+                      <SelectItem value="vocational" className="py-1.5 text-xs">
+                        {t('toolbar.modeVocational')}
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -888,13 +921,26 @@ function HomePage() {
             <textarea
               ref={textareaRef}
               placeholder={t('upload.requirementPlaceholder')}
-              className="w-full resize-none border-0 bg-transparent px-4 pt-1 pb-2 text-[13px] leading-relaxed placeholder:text-muted-foreground/40 focus:outline-none min-h-[140px] max-h-[300px]"
+              className="w-full resize-none border-0 bg-transparent px-4 pt-2 pb-2 text-[13px] leading-relaxed placeholder:text-muted-foreground/40 focus:outline-none min-h-[140px] max-h-[300px]"
               value={form.requirement}
               onChange={(e) => updateForm('requirement', e.target.value)}
               onKeyDown={handleKeyDown}
-              rows={4}
+              rows={5}
             />
 
+            {/* Sample prompts */}
+            <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pb-1">
+              {(['home.samplePrompt1', 'home.samplePrompt2', 'home.samplePrompt3'] as const).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => updateForm('requirement', t(key))}
+                  className="truncate max-w-[240px] text-[11.5px] text-muted-foreground/55 hover:text-muted-foreground/90 transition-colors text-left"
+                >
+                  {t(key)}
+                </button>
+              ))}
+            </div>
             {/* Toolbar row */}
             <div className="px-3 pb-3 flex items-end gap-2">
               <div className="flex-1 min-w-0">
@@ -913,19 +959,11 @@ function HomePage() {
                 />
               </div>
 
-              {/* Interactive mode toggle */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <InteractiveModeButton
-                    pressed={form.interactiveMode}
-                    label={t('toolbar.interactiveModeLabel')}
-                    onPressedChange={(pressed) => updateForm('interactiveMode', pressed)}
-                  />
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  {t('toolbar.interactiveModeHint')}
-                </TooltipContent>
-              </Tooltip>
+              {/* Agents */}
+              <AgentBar />
+
+              {/* Deep-thinking toggle — reads provider/model from the settings store */}
+              <DeepThinkingButton />
 
               {/* Voice input */}
               <SpeechButton
@@ -944,72 +982,25 @@ function HomePage() {
                 onClick={handleGenerate}
                 disabled={!canGenerate || preparingGenerate}
                 className={cn(
-                  'shrink-0 h-8 rounded-lg flex items-center justify-center gap-1.5 transition-all px-3',
+                  'shrink-0 h-8 rounded-full flex items-center justify-center gap-1.5 transition-all px-4',
                   canGenerate && !preparingGenerate
-                    ? 'bg-primary text-primary-foreground hover:opacity-90 shadow-sm cursor-pointer'
+                    ? 'bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500 text-white hover:opacity-90 shadow-sm shadow-indigo-500/25 cursor-pointer'
                     : 'bg-muted text-muted-foreground/40 cursor-not-allowed',
                 )}
               >
                 <span className="text-xs font-medium">
-                  {preparingGenerate ? t('stage.generating') : t('toolbar.enterClassroom')}
+                  {preparingGenerate ? t('stage.generating') : t('toolbar.startLearning')}
                 </span>
                 {preparingGenerate ? (
                   <Loader2 className="size-3.5 animate-spin" />
                 ) : (
-                  <ArrowUp className="size-3.5" />
+                  <ArrowRight className="size-3.5" />
                 )}
               </button>
             </div>
           </div>
         </motion.div>
 
-        {showVocationalTestUi && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="mt-2 flex w-full justify-start px-1"
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={form.vocationalTestMode}
-                  onClick={() => updateForm('vocationalTestMode', !form.vocationalTestMode)}
-                  className={cn(
-                    'inline-flex h-7 items-center gap-2 rounded-full border px-2.5 text-[11px] font-medium transition-colors',
-                    form.vocationalTestMode
-                      ? 'border-cyan-400/70 bg-cyan-50 text-cyan-700 shadow-[0_0_10px_rgba(6,182,212,0.16)] dark:bg-cyan-950/40 dark:text-cyan-300'
-                      : 'border-border/70 bg-background/70 text-muted-foreground hover:border-cyan-300/60 hover:text-cyan-700 dark:hover:text-cyan-300',
-                  )}
-                >
-                  <span className="rounded-full bg-cyan-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-normal text-cyan-700 dark:bg-cyan-900/45 dark:text-cyan-300">
-                    测试功能
-                  </span>
-                  <Sparkles className="size-3.5" />
-                  <span>职教任务</span>
-                  <span
-                    className={cn(
-                      'relative h-3.5 w-6 rounded-full transition-colors',
-                      form.vocationalTestMode ? 'bg-cyan-500' : 'bg-muted-foreground/25',
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        'absolute left-0.5 top-0.5 size-2.5 rounded-full bg-white transition-transform',
-                        form.vocationalTestMode ? 'translate-x-2.5' : 'translate-x-0',
-                      )}
-                    />
-                  </span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                从当前输入框提交职教实操训练测试
-              </TooltipContent>
-            </Tooltip>
-          </motion.div>
-        )}
 
         {/* ── Error ── */}
         <AnimatePresence>
@@ -1036,163 +1027,171 @@ function HomePage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="relative z-10 mt-10 w-full max-w-6xl flex flex-col items-center"
+          className="relative z-10 mt-12 w-full max-w-6xl flex flex-col items-center"
         >
-          {/* Trigger — divider-line with centered text. Fixed height keeps the
-              bar geometrically stable when the New-folder action or the folder
-              path appears/disappears (entering vs leaving a folder). */}
-          <div className="group w-full flex items-center gap-4 h-9">
-            <div className="flex-1 h-px bg-border/40 group-hover:bg-border/70 transition-colors" />
-            <div className="shrink-0 flex items-center gap-3 text-[13px] text-muted-foreground/60 select-none">
-              <button
-                onClick={() => {
-                  if (currentFolderId) setCurrentFolderId(undefined);
-                  else persistRecentOpen(!recentOpen);
-                }}
-                className="flex items-center gap-2 hover:text-foreground/70 transition-colors cursor-pointer"
-              >
-                <Clock className="size-3.5" />
-                {t('classroom.recentClassrooms')}
-                {currentFolder && (
-                  <>
-                    <ChevronRight className="size-3 opacity-40" />
-                    <span className="text-foreground/80 truncate max-w-[160px]">
-                      {currentFolder.name}
-                    </span>
-                  </>
-                )}
-                <span className="text-[11px] tabular-nums opacity-60">
-                  {currentFolder ? currentFolderClassrooms.length : classrooms.length}
-                </span>
-                <motion.div
-                  animate={{ rotate: recentOpen ? 180 : 0 }}
-                  transition={{ duration: 0.3, ease: 'easeInOut' }}
-                >
-                  <ChevronDown className="size-3.5" />
-                </motion.div>
-              </button>
-
-              {/* Search toggle — icon that expands into an input in place */}
-              <AnimatePresence initial={false}>
-                {!searchOpen ? (
-                  <motion.button
-                    key="search-icon"
-                    ref={searchButtonRef}
-                    type="button"
-                    aria-label={t('classroom.searchAriaLabel')}
-                    onClick={() => {
-                      setSearchOpen(true);
-                      if (!recentOpen) persistRecentOpen(true);
-                      requestAnimationFrame(() => searchInputRef.current?.focus());
-                    }}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.12, ease: 'easeOut' }}
-                    className="flex items-center justify-center size-6 rounded-full text-muted-foreground/50 hover:text-foreground/70 hover:bg-muted/50 transition-colors cursor-pointer"
-                  >
-                    <Search className="size-3.5" />
-                  </motion.button>
-                ) : (
-                  <motion.div
-                    key="search-input"
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 200 }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
-                    className="overflow-hidden"
-                  >
-                    <InputGroup
-                      className={cn(
-                        'h-7 text-[12px] rounded-full bg-muted/40 border-transparent shadow-none',
-                        'transition-colors',
-                        'hover:bg-muted/60',
-                        'has-[[data-slot=input-group-control]:focus-visible]:bg-muted/60',
-                        'has-[[data-slot=input-group-control]:focus-visible]:border-transparent',
-                        'has-[[data-slot=input-group-control]:focus-visible]:ring-0',
-                      )}
-                    >
-                      <InputGroupInput
-                        ref={searchInputRef}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') {
-                            e.preventDefault();
-                            if (searchQuery) {
-                              setSearchQuery('');
-                            } else {
-                              setSearchOpen(false);
-                              requestAnimationFrame(() => searchButtonRef.current?.focus());
-                            }
-                          }
-                        }}
-                        onBlur={() => {
-                          if (!searchQuery) {
-                            setSearchOpen(false);
-                          }
-                        }}
-                        placeholder={t('classroom.searchPlaceholder')}
-                        aria-label={t('classroom.searchAriaLabel')}
-                        className="h-7 pl-3 placeholder:text-muted-foreground/50"
-                      />
-                      {searchQuery && (
-                        <InputGroupButton
-                          size="icon-xs"
-                          aria-label={t('classroom.clearSearch')}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            setSearchQuery('');
-                            searchInputRef.current?.focus();
-                          }}
-                        >
-                          <X />
-                        </InputGroupButton>
-                      )}
-                    </InputGroup>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <button
-                onClick={triggerImport}
-                disabled={importing}
-                className="group/import grid grid-cols-[auto_0fr] hover:grid-cols-[auto_1fr] items-center gap-1 rounded-full px-1.5 py-0.5 text-[12px] text-muted-foreground/35 hover:text-muted-foreground/70 hover:bg-muted/50 transition-all duration-200 cursor-pointer"
-              >
-                <Upload className="size-3" />
-                <span className="overflow-hidden opacity-0 group-hover/import:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                  {t('import.classroom')}
-                </span>
-              </button>
-              {PPTX_IMPORT_ENABLED && (
-                <button
-                  onClick={triggerPptxFileSelect}
-                  disabled={pptxImporting}
-                  className="group/import-pptx grid grid-cols-[auto_0fr] hover:grid-cols-[auto_1fr] items-center gap-1 rounded-full px-1.5 py-0.5 text-[12px] text-muted-foreground/35 hover:text-muted-foreground/70 hover:bg-muted/50 transition-all duration-200 cursor-pointer"
-                >
-                  <Presentation className="size-3" />
-                  <span className="overflow-hidden opacity-0 group-hover/import-pptx:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    {t('import.pptx')}
+          {/* Header — left-aligned title, right-aligned "View all". The folder
+              path and the library actions (search / import / new folder) ride
+              along the same row so they stay reachable in every view. */}
+          <div className="w-full flex items-center gap-3">
+            <button
+              onClick={() => {
+                if (currentFolderId) setCurrentFolderId(undefined);
+                else persistRecentOpen(!recentOpen);
+              }}
+              className="group/head flex min-w-0 items-center gap-2 text-[15px] font-semibold text-foreground/85 hover:text-foreground transition-colors cursor-pointer"
+            >
+              <Clock className="size-4 shrink-0 text-muted-foreground/70" />
+              <span className="shrink-0">{t('classroom.recentClassrooms')}</span>
+              {currentFolder && (
+                <>
+                  <ChevronRight className="size-3.5 shrink-0 opacity-40" />
+                  <span className="truncate max-w-[160px] text-foreground/80">
+                    {currentFolder.name}
                   </span>
-                </button>
+                </>
               )}
-              {/* New folder — round icon button, matches the import/upload affordances. */}
-              {!currentFolderId && !isSearching && (
-                <button
+              <span className="shrink-0 text-[12px] font-normal tabular-nums text-muted-foreground/50">
+                {currentFolder ? currentFolderClassrooms.length : classrooms.length}
+              </span>
+              <motion.div
+                animate={{ rotate: recentOpen ? 180 : 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="shrink-0 text-muted-foreground/50"
+              >
+                <ChevronDown className="size-3.5" />
+              </motion.div>
+            </button>
+
+            <div className="flex-1" />
+
+            {/* Search toggle — icon that expands into an input in place */}
+            <AnimatePresence initial={false}>
+              {!searchOpen ? (
+                <motion.button
+                  key="search-icon"
+                  ref={searchButtonRef}
                   type="button"
+                  aria-label={t('classroom.searchAriaLabel')}
                   onClick={() => {
+                    setSearchOpen(true);
                     if (!recentOpen) persistRecentOpen(true);
-                    setNewFolderOpen(true);
+                    requestAnimationFrame(() => searchInputRef.current?.focus());
                   }}
-                  aria-label={t('classroom.newFolderTitle')}
-                  title={t('classroom.newFolderTitle')}
-                  className="inline-flex items-center justify-center size-7 rounded-full bg-muted/40 text-muted-foreground ring-1 ring-border/50 hover:bg-muted hover:text-foreground hover:ring-border transition-[background-color,color,box-shadow] cursor-pointer"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.12, ease: 'easeOut' }}
+                  className="flex items-center justify-center size-7 rounded-full text-muted-foreground/50 hover:text-foreground/70 hover:bg-muted/50 transition-colors cursor-pointer"
                 >
-                  <FolderPlus className="size-3.5" />
-                </button>
+                  <Search className="size-3.5" />
+                </motion.button>
+              ) : (
+                <motion.div
+                  key="search-input"
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 200 }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="overflow-hidden"
+                >
+                  <InputGroup
+                    className={cn(
+                      'h-7 text-[12px] rounded-full bg-muted/40 border-transparent shadow-none',
+                      'transition-colors',
+                      'hover:bg-muted/60',
+                      'has-[[data-slot=input-group-control]:focus-visible]:bg-muted/60',
+                      'has-[[data-slot=input-group-control]:focus-visible]:border-transparent',
+                      'has-[[data-slot=input-group-control]:focus-visible]:ring-0',
+                    )}
+                  >
+                    <InputGroupInput
+                      ref={searchInputRef}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          e.preventDefault();
+                          if (searchQuery) {
+                            setSearchQuery('');
+                          } else {
+                            setSearchOpen(false);
+                            requestAnimationFrame(() => searchButtonRef.current?.focus());
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        if (!searchQuery) {
+                          setSearchOpen(false);
+                        }
+                      }}
+                      placeholder={t('classroom.searchPlaceholder')}
+                      aria-label={t('classroom.searchAriaLabel')}
+                      className="h-7 pl-3 placeholder:text-muted-foreground/50"
+                    />
+                    {searchQuery && (
+                      <InputGroupButton
+                        size="icon-xs"
+                        aria-label={t('classroom.clearSearch')}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setSearchQuery('');
+                          searchInputRef.current?.focus();
+                        }}
+                      >
+                        <X />
+                      </InputGroupButton>
+                    )}
+                  </InputGroup>
+                </motion.div>
               )}
-            </div>
-            <div className="flex-1 h-px bg-border/40 group-hover:bg-border/70 transition-colors" />
+            </AnimatePresence>
+
+            <button
+              onClick={triggerImport}
+              disabled={importing}
+              className="group/import grid grid-cols-[auto_0fr] hover:grid-cols-[auto_1fr] items-center gap-1 rounded-full px-1.5 py-0.5 text-[12px] text-muted-foreground/35 hover:text-muted-foreground/70 hover:bg-muted/50 transition-all duration-200 cursor-pointer"
+            >
+              <Upload className="size-3" />
+              <span className="overflow-hidden opacity-0 group-hover/import:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                {t('import.classroom')}
+              </span>
+            </button>
+            {PPTX_IMPORT_ENABLED && (
+              <button
+                onClick={triggerPptxFileSelect}
+                disabled={pptxImporting}
+                className="group/import-pptx grid grid-cols-[auto_0fr] hover:grid-cols-[auto_1fr] items-center gap-1 rounded-full px-1.5 py-0.5 text-[12px] text-muted-foreground/35 hover:text-muted-foreground/70 hover:bg-muted/50 transition-all duration-200 cursor-pointer"
+              >
+                <Presentation className="size-3" />
+                <span className="overflow-hidden opacity-0 group-hover/import-pptx:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                  {t('import.pptx')}
+                </span>
+              </button>
+            )}
+            {/* New folder — round icon button, matches the import/upload affordances. */}
+            {!currentFolderId && !isSearching && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!recentOpen) persistRecentOpen(true);
+                  setNewFolderOpen(true);
+                }}
+                aria-label={t('classroom.newFolderTitle')}
+                title={t('classroom.newFolderTitle')}
+                className="inline-flex items-center justify-center size-7 rounded-full bg-muted/40 text-muted-foreground ring-1 ring-border/50 hover:bg-muted hover:text-foreground hover:ring-border transition-[background-color,color,box-shadow] cursor-pointer"
+              >
+                <FolderPlus className="size-3.5" />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => persistRecentOpen(true)}
+              className="shrink-0 flex items-center gap-1 text-[13px] text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer"
+            >
+              {t('classroom.viewAll')}
+              <ArrowRight className="size-3.5" />
+            </button>
           </div>
 
           {/* Expandable content */}
@@ -1260,7 +1259,7 @@ function HomePage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
                         transition={{ duration: 0.2 }}
-                        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8"
+                        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
                       >
                         {/* Root + non-search: render folder tiles first. */}
                         {!isSearching &&
@@ -1294,7 +1293,6 @@ function HomePage() {
                           >
                             <ClassroomCard
                               classroom={classroom}
-                              slide={thumbnails[classroom.id]}
                               formatDate={formatDate}
                               onDelete={handleDelete}
                               onRename={handleRename}
@@ -1638,9 +1636,30 @@ function GreetingBar() {
 }
 
 // ─── Classroom Card — clean, minimal style ──────────────────────
+/**
+ * Decorative gradient disc palettes for course cards, picked by hashing the
+ * course id so a card keeps its colour across sorting, filtering and folder
+ * moves. Purely cosmetic — the course name still carries the identity.
+ */
+const COURSE_CARD_PALETTES = [
+  'bg-gradient-to-br from-sky-400 to-indigo-500',
+  'bg-gradient-to-br from-violet-400 to-fuchsia-500',
+  'bg-gradient-to-br from-emerald-400 to-teal-500',
+  'bg-gradient-to-br from-amber-400 to-orange-500',
+  'bg-gradient-to-br from-rose-400 to-pink-500',
+  'bg-gradient-to-br from-cyan-400 to-blue-500',
+];
+
+function hashString(value: string) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
 function ClassroomCard({
   classroom,
-  slide,
   formatDate,
   overlay,
   onDelete,
@@ -1651,9 +1670,8 @@ function ClassroomCard({
   onClick,
 }: {
   classroom: StageListItem;
-  slide?: Slide;
   formatDate: (ts: number) => string;
-  /** Extra absolutely-positioned layers over the thumbnail (move menu, badges). */
+  /** Extra layers in the hover action row (move menu, folder badge). */
   overlay?: React.ReactNode;
   onDelete: (id: string, e: React.MouseEvent) => void;
   onRename: (id: string, newName: string) => void;
@@ -1663,21 +1681,9 @@ function ClassroomCard({
   onClick: () => void;
 }) {
   const { t } = useI18n();
-  const thumbRef = useRef<HTMLDivElement>(null);
-  const [thumbWidth, setThumbWidth] = useState(0);
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const el = thumbRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => {
-      setThumbWidth(Math.round(entry.contentRect.width));
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
 
   useEffect(() => {
     if (editing) nameInputRef.current?.focus();
@@ -1687,6 +1693,11 @@ function ClassroomCard({
   const showModeBadge = classroom.interactiveMode || isTaskEngineMode;
   const ModeBadgeIcon = isTaskEngineMode ? Sparkles : Atom;
   const modeBadgeLabel = isTaskEngineMode ? 'Vocational Mode' : t('toolbar.interactiveModeLabel');
+
+  // Two decorative, order-stable gradients for the icon disc. Hashing the id
+  // (rather than the array index) keeps a card's colour fixed across sorting,
+  // filtering and folder moves.
+  const palette = COURSE_CARD_PALETTES[hashString(classroom.id) % COURSE_CARD_PALETTES.length];
 
   const startRename = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1705,7 +1716,12 @@ function ClassroomCard({
 
   return (
     <div
-      className="group cursor-pointer"
+      className={cn(
+        'group relative cursor-pointer rounded-2xl border border-indigo-400/15 bg-white/70 backdrop-blur-xl',
+        'p-3.5 transition-all duration-200',
+        'hover:-translate-y-0.5 hover:border-indigo-400/35 hover:shadow-lg hover:shadow-indigo-500/10',
+        'dark:border-indigo-400/15 dark:bg-slate-900/60 dark:hover:shadow-black/30',
+      )}
       onClick={confirmingDelete ? undefined : onClick}
       draggable={!confirmingDelete && !editing}
       onDragStart={(e) => {
@@ -1718,34 +1734,120 @@ function ClassroomCard({
         window.dispatchEvent(new CustomEvent('course-drag-end'));
       }}
     >
-      {/* Thumbnail — large radius, no border, subtle bg */}
-      <div
-        ref={thumbRef}
-        className="relative w-full aspect-[16/9] rounded-2xl bg-slate-100 dark:bg-slate-800/80 overflow-hidden transition-transform duration-200 group-hover:scale-[1.02]"
-      >
-        {slide && thumbWidth > 0 ? (
-          <SlideThumbnail
-            slide={slide}
-            size={thumbWidth}
-            viewportSize={slide.viewportSize ?? 1000}
-            viewportRatio={slide.viewportRatio ?? 0.5625}
-          />
-        ) : !slide ? (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="size-12 rounded-2xl bg-gradient-to-br from-violet-100 to-blue-100 dark:from-violet-900/30 dark:to-blue-900/30 flex items-center justify-center">
-              <span className="text-xl opacity-50">📄</span>
-            </div>
-          </div>
-        ) : null}
+      {/* Header — icon disc, title (double-click to rename), hover actions */}
+      <div className="flex items-start gap-3">
+        <div
+          className={cn(
+            'shrink-0 size-10 rounded-xl flex items-center justify-center text-white shadow-sm',
+            palette,
+          )}
+        >
+          <span className="text-[15px] font-bold">
+            {classroom.name.trim().charAt(0).toUpperCase() || '·'}
+          </span>
+        </div>
 
+        <div className="min-w-0 flex-1">
+          {editing ? (
+            <div onClick={(e) => e.stopPropagation()}>
+              <input
+                ref={nameInputRef}
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitRename();
+                  if (e.key === 'Escape') setEditing(false);
+                }}
+                onBlur={commitRename}
+                maxLength={100}
+                placeholder={t('classroom.renamePlaceholder')}
+                className="w-full bg-transparent border-b border-violet-400/60 text-[14px] font-semibold text-foreground/90 outline-none placeholder:text-muted-foreground/40"
+              />
+            </div>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p
+                  className="truncate text-[14px] font-semibold text-foreground/90 cursor-text"
+                  onDoubleClick={startRename}
+                >
+                  {classroom.name}
+                </p>
+              </TooltipTrigger>
+              <TooltipContent
+                side="bottom"
+                sideOffset={4}
+                className="!max-w-[min(90vw,32rem)] break-words whitespace-normal"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="break-all">{classroom.name}</span>
+                  <button
+                    className="shrink-0 p-0.5 rounded hover:bg-foreground/10 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(classroom.name);
+                      toast.success(t('classroom.nameCopied'));
+                    }}
+                  >
+                    <Copy className="size-3 opacity-60" />
+                  </button>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          <p className="mt-1 line-clamp-2 min-h-[2.5em] text-[12px] leading-relaxed text-muted-foreground/60">
+            {classroom.description?.trim() || t('classroom.noDescription')}
+          </p>
+        </div>
+
+        {/* Delete / rename — revealed on hover, kept out of the title's flow. */}
+        <AnimatePresence>
+          {!confirmingDelete && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-6 text-muted-foreground/50 hover:text-foreground"
+                onClick={startRename}
+              >
+                <Pencil className="size-3" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-6 text-muted-foreground/50 hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(classroom.id, e);
+                }}
+              >
+                <Trash2 className="size-3" />
+              </Button>
+              {overlay}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Footer — metadata pills, then the relative time and the go arrow. */}
+      <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground/55">
+        <span className="inline-flex items-center rounded-full bg-violet-100/70 dark:bg-violet-900/25 px-2 py-0.5 font-medium text-violet-600/90 dark:text-violet-300/90">
+          {classroom.sceneCount} {t('classroom.scenesSuffix')}
+        </span>
         {showModeBadge && (
           <Tooltip>
             <TooltipTrigger asChild>
               <span
                 aria-label={modeBadgeLabel}
-                onClick={(e) => e.stopPropagation()}
                 className={cn(
-                  'absolute bottom-2 left-2 inline-flex items-center justify-center size-5 rounded-full bg-white/70 dark:bg-slate-900/60 backdrop-blur-sm shadow-sm z-10',
+                  'inline-flex items-center justify-center size-5 rounded-full',
                   isTaskEngineMode
                     ? 'text-amber-600 dark:text-amber-300 ring-1 ring-amber-500/35'
                     : 'text-cyan-600 dark:text-cyan-300 ring-1 ring-cyan-500/30',
@@ -1768,125 +1870,46 @@ function ClassroomCard({
           </Tooltip>
         )}
 
-        {/* Delete — top-right, only on hover */}
-        <AnimatePresence>
-          {!confirmingDelete && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <Button
-                size="icon"
-                variant="ghost"
-                className="absolute top-2 right-2 size-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 hover:bg-destructive/80 text-white hover:text-white backdrop-blur-sm rounded-full"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(classroom.id, e);
-                }}
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="absolute top-2 right-11 size-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 hover:bg-black/50 text-white hover:text-white backdrop-blur-sm rounded-full"
-                onClick={startRename}
-              >
-                <Pencil className="size-3.5" />
-              </Button>
-              {overlay}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div className="flex-1" />
 
-        {/* Inline delete confirmation overlay */}
-        <AnimatePresence>
-          {confirmingDelete && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/50 backdrop-blur-[6px]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="text-[13px] font-medium text-white/90">
-                {t('classroom.deleteConfirmTitle')}?
-              </span>
-              <div className="flex gap-2">
-                <button
-                  className="px-3.5 py-1 rounded-lg text-[12px] font-medium bg-white/15 text-white/80 hover:bg-white/25 backdrop-blur-sm transition-colors"
-                  onClick={onCancelDelete}
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  className="px-3.5 py-1 rounded-lg text-[12px] font-medium bg-red-500/90 text-white hover:bg-red-500 transition-colors"
-                  onClick={onConfirmDelete}
-                >
-                  {t('classroom.delete')}
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Info — outside the thumbnail */}
-      <div className="mt-2.5 px-1 flex items-center gap-2">
-        <span className="shrink-0 inline-flex items-center rounded-full bg-violet-100 dark:bg-violet-900/30 px-2 py-0.5 text-[11px] font-medium text-violet-600 dark:text-violet-400">
-          {classroom.sceneCount} {t('classroom.slides')} · {formatDate(classroom.updatedAt)}
+        <span className="inline-flex shrink-0 items-center gap-1 tabular-nums">
+          <Clock className="size-3" />
+          {formatDate(classroom.updatedAt)}
         </span>
-        {editing ? (
-          <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
-            <input
-              ref={nameInputRef}
-              value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitRename();
-                if (e.key === 'Escape') setEditing(false);
-              }}
-              onBlur={commitRename}
-              maxLength={100}
-              placeholder={t('classroom.renamePlaceholder')}
-              className="w-full bg-transparent border-b border-violet-400/60 text-[15px] font-medium text-foreground/90 outline-none placeholder:text-muted-foreground/40"
-            />
-          </div>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <p
-                className="font-medium text-[15px] truncate text-foreground/90 min-w-0 cursor-text"
-                onDoubleClick={startRename}
-              >
-                {classroom.name}
-              </p>
-            </TooltipTrigger>
-            <TooltipContent
-              side="bottom"
-              sideOffset={4}
-              className="!max-w-[min(90vw,32rem)] break-words whitespace-normal"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="break-all">{classroom.name}</span>
-                <button
-                  className="shrink-0 p-0.5 rounded hover:bg-foreground/10 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigator.clipboard.writeText(classroom.name);
-                    toast.success(t('classroom.nameCopied'));
-                  }}
-                >
-                  <Copy className="size-3 opacity-60" />
-                </button>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        <ArrowRight className="size-3.5 shrink-0 opacity-0 -translate-x-0.5 group-hover:opacity-70 group-hover:translate-x-0 transition-all" />
       </div>
+
+      {/* Inline delete confirmation overlay */}
+      <AnimatePresence>
+        {confirmingDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-black/50 backdrop-blur-[6px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-[13px] font-medium text-white/90">
+              {t('classroom.deleteConfirmTitle')}?
+            </span>
+            <div className="flex gap-2">
+              <button
+                className="px-3.5 py-1 rounded-lg text-[12px] font-medium bg-white/15 text-white/80 hover:bg-white/25 backdrop-blur-sm transition-colors"
+                onClick={onCancelDelete}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                className="px-3.5 py-1 rounded-lg text-[12px] font-medium bg-red-500/90 text-white hover:bg-red-500 transition-colors"
+                onClick={onConfirmDelete}
+              >
+                {t('classroom.delete')}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

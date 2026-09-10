@@ -576,3 +576,17 @@ body[data-maic-editor='true'] .editable-element-text li,
     -webkit-text-fill-color: var(--muted-foreground);
   }
 }
+
+/* ── Hero lockup ────────────────────────────────────────────────────────────
+   Gentle float for the two badges orbiting the home-page brand mark. The
+   `motion-safe:` utility on each badge already suppresses this under
+   `prefers-reduced-motion`, so no separate override block is needed. */
+@keyframes hl-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}

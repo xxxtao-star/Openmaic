@@ -10,8 +10,14 @@
     "close": "关闭"
   },
   "home": {
-    "slogan": "Generative Learning in Multi-Agent Interactive Classroom",
-    "greetingWithName": "嗨，{{name}}"
+    "slogan": "AI 驱动的多智能体互动学习平台",
+    "greetingWithName": "嗨，{{name}}",
+    "heroTitle": "芯火课堂",
+    "heroSubtitle": "AI 驱动的多智能体互动学习平台",
+    "askPromptTitle": "你可以这样问我：",
+    "samplePrompt1": "“帮我讲解 Vue3 组件的核心原理，并给出实战案例”",
+    "samplePrompt2": "“用白板给我讲解傅里叶变换”",
+    "samplePrompt3": "“或者上传文件，让多智能体为你共同分析...”"
   },
   "toolbar": {
     "pdfParser": "解析器",
@@ -44,7 +50,15 @@
     "ttsPreview": "试听",
     "ttsPreviewing": "播放中...",
     "interactiveModeHint": "开启深度交互模式，生成更多互动内容",
-    "interactiveModeLabel": "深度交互"
+    "interactiveModeLabel": "深度交互",
+    "deepThinking": "深度思考",
+    "startLearning": "开始学习",
+    "selectLearningMode": "选择学习模式",
+    "modeStandard": "标准课程",
+    "modeStandardHint": "结构化的图文课件，适合系统性学习",
+    "modeInteractive": "深度交互",
+    "modeVocational": "职教任务",
+    "modeVocationalHint": "从当前输入框提交职教实操训练测试"
   },
   "export": {
     "pptx": "导出 PPTX",
@@ -1008,7 +1022,10 @@
     "deleteFolderAndCourses_other": "删除文件夹和 {{count}} 门课程",
     "notFound": "找不到这门课程",
     "notFoundDesc": "课程不存在，或已被删除。",
-    "backToHome": "返回首页"
+    "backToHome": "返回首页",
+    "viewAll": "查看全部",
+    "noDescription": "还没有课程介绍",
+    "scenesSuffix": "个场景"
   },
   "upload": {
     "pdfSizeLimit": "支持最大50MB的PDF文件",

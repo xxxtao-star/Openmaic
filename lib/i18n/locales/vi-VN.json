@@ -10,8 +10,14 @@
     "close": "Đóng"
   },
   "home": {
-    "slogan": "Học tập sinh tạo trong lớp học tương tác đa tác nhân",
-    "greetingWithName": "Chào {{name}}"
+    "slogan": "Nền tảng học tập tương tác đa tác tử do AI dẫn dắt",
+    "greetingWithName": "Chào {{name}}",
+    "heroTitle": "Spark Classroom",
+    "heroSubtitle": "Nền tảng học tập tương tác đa tác tử do AI dẫn dắt",
+    "askPromptTitle": "Bạn có thể hỏi tôi những điều như:",
+    "samplePrompt1": "“Giải thích nguyên lý hoạt động của component Vue 3 kèm ví dụ thực tế”",
+    "samplePrompt2": "“Giảng cho tôi về biến đổi Fourier trên bảng trắng”",
+    "samplePrompt3": "“Hoặc tải tệp lên để các tác tử cùng phân tích...”"
   },
   "toolbar": {
     "pdfParser": "Bộ đọc PDF",
@@ -44,7 +50,15 @@
     "ttsPreview": "Nghe thử",
     "ttsPreviewing": "Đang phát…",
     "interactiveModeHint": "Bật chế độ ưu tiên tương tác để có nhiều nội dung thực hành hơn",
-    "interactiveModeLabel": "Chế độ tương tác"
+    "interactiveModeLabel": "Chế độ tương tác",
+    "deepThinking": "Suy nghĩ sâu",
+    "startLearning": "Bắt đầu học",
+    "selectLearningMode": "Chọn chế độ học",
+    "modeStandard": "Khóa học tiêu chuẩn",
+    "modeStandardHint": "Khóa học dạng slide kèm văn bản, phù hợp với phần lý thuyết",
+    "modeInteractive": "Tương tác chuyên sâu",
+    "modeVocational": "Nhiệm vụ nghề nghiệp",
+    "modeVocationalHint": "Chạy bài thực hành nghề từ ô nhập liệu hiện tại"
   },
   "export": {
     "pptx": "Xuất PPTX",
@@ -1008,7 +1022,10 @@
     "deleteFolderConfirmRemove": "Thao tác này xóa thư mục cùng các bài học bên trong, gồm cả lịch sử trò chuyện.",
     "notFound": "Không tìm thấy khóa học",
     "notFoundDesc": "Khóa học này không tồn tại hoặc đã bị xóa.",
-    "backToHome": "Về trang chủ"
+    "backToHome": "Về trang chủ",
+    "viewAll": "Xem tất cả",
+    "noDescription": "Chưa có mô tả khóa học",
+    "scenesSuffix": "cảnh"
   },
   "upload": {
     "pdfSizeLimit": "Nhận tệp PDF tối đa 50MB",

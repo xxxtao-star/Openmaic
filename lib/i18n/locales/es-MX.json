@@ -10,8 +10,14 @@
     "close": "Cerrar"
   },
   "home": {
-    "slogan": "Aprendizaje generativo en un aula interactiva multiagente",
-    "greetingWithName": "Hola, {{name}}"
+    "slogan": "Plataforma de aprendizaje interactivo multiagente impulsada por IA",
+    "greetingWithName": "Hola, {{name}}",
+    "heroTitle": "Spark Classroom",
+    "heroSubtitle": "Plataforma de aprendizaje interactivo multiagente impulsada por IA",
+    "askPromptTitle": "Puedes preguntarme cosas como:",
+    "samplePrompt1": "«Explícame cómo funcionan los componentes de Vue 3, con un caso real»",
+    "samplePrompt2": "«Explícame la transformada de Fourier en el pizarrón»",
+    "samplePrompt3": "«O sube un archivo y deja que los agentes lo analicen juntos...»"
   },
   "toolbar": {
     "pdfParser": "Analizador",
@@ -44,7 +50,15 @@
     "ttsPreview": "Probar",
     "ttsPreviewing": "Reproduciendo...",
     "interactiveModeHint": "Activa el modo interactivo para obtener contenido más práctico",
-    "interactiveModeLabel": "Modo interactivo"
+    "interactiveModeLabel": "Modo interactivo",
+    "deepThinking": "Pensamiento profundo",
+    "startLearning": "Empezar a aprender",
+    "selectLearningMode": "Elegir modo de aprendizaje",
+    "modeStandard": "Curso estándar",
+    "modeStandardHint": "Curso estructurado de diapositivas y texto, ideal para teoría",
+    "modeInteractive": "Interacción profunda",
+    "modeVocational": "Tarea vocacional",
+    "modeVocationalHint": "Ejecutar una práctica vocacional desde la entrada actual"
   },
   "export": {
     "pptx": "Exportar PPTX",
@@ -1008,7 +1022,10 @@
     "deleteFolderConfirmRemove": "Esto elimina la carpeta y sus cursos, incluido el historial de chat.",
     "notFound": "Curso no encontrado",
     "notFoundDesc": "Este curso no existe o ha sido eliminado.",
-    "backToHome": "Volver al inicio"
+    "backToHome": "Volver al inicio",
+    "viewAll": "Ver todo",
+    "noDescription": "Aún no hay descripción del curso",
+    "scenesSuffix": "escenas"
   },
   "upload": {
     "pdfSizeLimit": "Admite archivos PDF de hasta 50 MB",

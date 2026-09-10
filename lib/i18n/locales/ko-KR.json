@@ -10,8 +10,14 @@
     "close": "닫기"
   },
   "home": {
-    "slogan": "멀티 에이전트 인터랙티브 교실에서 펼치는 생성형 학습",
-    "greetingWithName": "안녕하세요, {{name}}!"
+    "slogan": "AI가 이끄는 멀티 에이전트 인터랙티브 학습 플랫폼",
+    "greetingWithName": "안녕하세요, {{name}}!",
+    "heroTitle": "신화 클래스룸",
+    "heroSubtitle": "AI가 이끄는 멀티 에이전트 인터랙티브 학습 플랫폼",
+    "askPromptTitle": "이렇게 물어볼 수 있어요:",
+    "samplePrompt1": "“Vue3 컴포넌트의 핵심 원리를 실제 예제와 함께 알려줘”",
+    "samplePrompt2": "“화이트보드로 푸리에 변환을 설명해줘”",
+    "samplePrompt3": "“파일을 올리면 여러 에이전트가 함께 분석해 줍니다...”"
   },
   "toolbar": {
     "pdfParser": "파서",
@@ -44,7 +50,15 @@
     "ttsPreview": "미리 듣기",
     "ttsPreviewing": "재생 중...",
     "interactiveModeHint": "체험 중심 콘텐츠를 위해 인터랙티브 우선 모드를 사용하세요",
-    "interactiveModeLabel": "인터랙티브 모드"
+    "interactiveModeLabel": "인터랙티브 모드",
+    "deepThinking": "심층 사고",
+    "startLearning": "학습 시작",
+    "selectLearningMode": "학습 모드 선택",
+    "modeStandard": "표준 강의",
+    "modeStandardHint": "슬라이드와 텍스트로 구성된 표준 강의, 이론 학습에 적합",
+    "modeInteractive": "심화 인터랙션",
+    "modeVocational": "직업 훈련 과제",
+    "modeVocationalHint": "현재 입력창에서 직업 실습 과제를 실행합니다"
   },
   "export": {
     "pptx": "PPTX 내보내기",
@@ -1008,7 +1022,10 @@
     "deleteFolderAndCourses_other": "폴더와 강의 {{count}}개 삭제",
     "notFound": "강의를 찾을 수 없습니다",
     "notFoundDesc": "해당 강의가 존재하지 않거나 이미 삭제되었습니다.",
-    "backToHome": "홈으로 돌아가기"
+    "backToHome": "홈으로 돌아가기",
+    "viewAll": "전체 보기",
+    "noDescription": "아직 강의 설명이 없습니다",
+    "scenesSuffix": "장면"
   },
   "upload": {
     "pdfSizeLimit": "최대 50MB PDF 파일을 지원합니다",

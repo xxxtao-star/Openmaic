@@ -10,8 +10,14 @@
     "close": "Close"
   },
   "home": {
-    "slogan": "Generative Learning in Multi-Agent Interactive Classroom",
-    "greetingWithName": "Hi, {{name}}"
+    "slogan": "AI-powered multi-agent interactive learning platform",
+    "greetingWithName": "Hi, {{name}}",
+    "heroTitle": "Spark Classroom",
+    "heroSubtitle": "AI-powered multi-agent interactive learning platform",
+    "askPromptTitle": "You can ask me things like:",
+    "samplePrompt1": "“Explain how Vue 3 components work, with a real-world example”",
+    "samplePrompt2": "“Walk me through the Fourier transform on the whiteboard”",
+    "samplePrompt3": "“Or upload a file and let the agents analyze it together...”"
   },
   "toolbar": {
     "pdfParser": "Parser",
@@ -44,7 +50,15 @@
     "ttsPreview": "Preview",
     "ttsPreviewing": "Playing...",
     "interactiveModeHint": "Enable interactive-first mode for more hands-on content",
-    "interactiveModeLabel": "Interactive Mode"
+    "interactiveModeLabel": "Interactive Mode",
+    "deepThinking": "Deep thinking",
+    "startLearning": "Start learning",
+    "selectLearningMode": "Select learning mode",
+    "modeStandard": "Standard course",
+    "modeStandardHint": "Structured slides-and-text course — good for theory",
+    "modeInteractive": "Deep interaction",
+    "modeVocational": "Vocational task",
+    "modeVocationalHint": "Run a vocational hands-on training task from the current input"
   },
   "export": {
     "pptx": "Export PPTX",
@@ -1008,7 +1022,10 @@
     "deleteFolderConfirmRemove": "This removes the folder and its courses, including chat history.",
     "notFound": "Course not found",
     "notFoundDesc": "This course does not exist, or it has been deleted.",
-    "backToHome": "Back to home"
+    "backToHome": "Back to home",
+    "viewAll": "View all",
+    "noDescription": "No course description yet",
+    "scenesSuffix": "scenes"
   },
   "upload": {
     "pdfSizeLimit": "Supports PDF files up to 50MB",
