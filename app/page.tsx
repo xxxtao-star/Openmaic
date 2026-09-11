@@ -1050,15 +1050,6 @@ function HomePage() {
                 <FolderPlus className="size-3.5" />
               </button>
             )}
-
-            <button
-              type="button"
-              onClick={() => persistRecentOpen(true)}
-              className="shrink-0 flex items-center gap-1 text-[13px] text-muted-foreground/60 dark:text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              {t('classroom.viewAll')}
-              <ArrowRight className="size-3.5" />
-            </button>
           </div>
 
           {/* Expandable content */}
