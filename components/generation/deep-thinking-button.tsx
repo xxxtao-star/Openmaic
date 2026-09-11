@@ -3,10 +3,11 @@
 /**
  * Deep-thinking pill.
  *
- * A compact, self-contained entry point to the current model's reasoning
- * setting — the same `ThinkingConfig` the model popover edits, just surfaced
- * next to the send button where it is seen before you hit generate rather
- * than after opening a popover.
+ * A compact on/off toggle over the current model's reasoning setting — the
+ * same `ThinkingConfig` the model popover edits, just surfaced next to the send
+ * button where it is seen before you hit generate rather than after opening a
+ * popover. Level, budget and `auto` stay in the model popover so this reads as
+ * one button rather than a button with a dropdown glued to it.
  *
  * Renders nothing when the current model exposes no configurable thinking,
  * so models without reasoning support don't grow a dead control.
@@ -22,14 +23,8 @@ import {
   normalizeThinkingConfig,
   supportsConfigurableThinking,
 } from '@/lib/ai/thinking-config';
-import type { ThinkingConfig, ThinkingEffort, ThinkingLevel } from '@/lib/types/provider';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import type { ThinkingConfig, ThinkingLevel } from '@/lib/types/provider';
+import { labelPillActive, labelPillMuted } from '@/components/generation/control-styles';
 import { cn } from '@/lib/utils';
 
 /** Models may expose their reasoning knob as a plain toggle, a toggle plus a
@@ -98,84 +93,18 @@ export function DeepThinkingButton({ className }: { className?: string }) {
     );
   };
 
-  // Level-based models (Gemini 3 style) pick from `levelValues`; effort-based
-  // ones (OpenAI/OpenRouter style) from `effortValues`. Both collapse into the
-  // same single dropdown.
-  const levelOptions = (thinking?.levelValues ?? thinking?.effortValues ?? []) as string[];
-  const levelValue =
-    (effective?.level ?? effective?.effort ?? thinking?.defaultLevel ?? thinking?.defaultEffort) ??
-    levelOptions[0];
+  const active = mode !== 'disabled';
 
   return (
-    <div
-      className={cn(
-        'flex shrink-0 items-center gap-1 rounded-full border border-border/50 pl-2 pr-0.5 text-xs font-medium transition-colors',
-        mode === 'disabled'
-          ? 'text-muted-foreground/70 hover:bg-muted/60 hover:text-foreground'
-          : 'border-violet-200/60 bg-violet-100 text-violet-700 dark:border-violet-700/50 dark:bg-violet-900/30 dark:text-violet-300',
-        className,
-      )}
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={() => apply(active ? 'disabled' : 'enabled')}
+      className={cn(active ? labelPillActive : labelPillMuted, className)}
     >
-      <Brain className="size-3.5 shrink-0" />
+      <Brain className="size-4 shrink-0" />
       <span className="hidden whitespace-nowrap sm:inline">{t('toolbar.deepThinking')}</span>
-
-      {levelOptions.length > 0 && mode !== 'disabled' ? (
-        // Level-based models (e.g. low / medium / high) pick the level here;
-        // the pill still reads as one control.
-        <Select
-          value={levelValue}
-          onValueChange={(level) =>
-            setThinkingConfig(
-              providerId,
-              modelId,
-              normalizeThinkingConfig(thinking, {
-                ...effective,
-                mode: 'enabled',
-                enabled: true,
-                ...(thinking?.levelValues?.length
-                  ? { level: level as ThinkingLevel }
-                  : { effort: level as ThinkingEffort }),
-              }),
-            )
-          }
-        >
-          <SelectTrigger
-            size="sm"
-            className="h-5 min-w-[52px] rounded-full border-0 bg-transparent px-1 !text-[10px] leading-none shadow-none focus-visible:ring-0 [&_svg]:size-3"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="end" className="min-w-[88px]">
-            {levelOptions.map((level) => (
-              <SelectItem key={level} value={level} className="py-1 text-xs">
-                {level}
-              </SelectItem>
-            ))}
-          </SelectContent>        </Select>
-      ) : (
-        <Select value={mode} onValueChange={(next) => apply(next as SimpleMode)}>
-          <SelectTrigger
-            size="sm"
-            className="h-5 min-w-[44px] rounded-full border-0 bg-transparent px-1 !text-[10px] leading-none shadow-none focus-visible:ring-0 [&_svg]:size-3"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="end" className="min-w-[88px]">
-            <SelectItem value="disabled" className="py-1 text-xs">
-              {t('toolbar.off')}
-            </SelectItem>
-            <SelectItem value="enabled" className="py-1 text-xs">
-              {t('toolbar.on')}
-            </SelectItem>
-            {thinking?.budgetRange?.allowDynamic && (
-              <SelectItem value="auto" className="py-1 text-xs">
-                {t('toolbar.auto')}
-              </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
-      )}
-    </div>
+    </button>
   );
 }
 

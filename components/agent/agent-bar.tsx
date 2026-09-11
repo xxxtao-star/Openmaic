@@ -15,6 +15,7 @@ import { resolveAgentVoiceOptions } from '@/lib/audio/agent-voice';
 import { VOXCPM_AUTO_VOICE_ID, VOXCPM_TTS_PROVIDER_ID } from '@/lib/audio/voxcpm';
 import {
   Sparkles,
+  Users,
   ChevronDown,
   ChevronUp,
   Shuffle,
@@ -24,6 +25,7 @@ import {
   Search,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { labelPillActive, labelPillMuted } from '@/components/generation/control-styles';
 import type { AgentConfig } from '@/lib/orchestration/registry/types';
 import type { TTSProviderId } from '@/lib/audio/types';
 import type { ProviderWithVoices } from '@/lib/audio/voice-resolver';
@@ -206,7 +208,7 @@ function AgentVoicePill({
       <div
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
-        className="flex items-center gap-1.5 h-6 w-[100px] rounded-full bg-muted/40 px-2.5 text-[11px] text-muted-foreground/30 shrink-0 cursor-not-allowed"
+        className="flex items-center gap-1.5 h-6 w-[100px] rounded-full bg-muted/40 px-2.5 text-[11px] text-muted-foreground/30 dark:text-muted-foreground/80 shrink-0 cursor-not-allowed"
       >
         <VolumeX className="size-3 shrink-0" />
         <span className="truncate flex-1 text-left">{displayName}</span>
@@ -245,29 +247,29 @@ function AgentVoicePill({
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        <div className="border-b border-border/50 p-2">
+        <div className="border-b border-border/50 dark:border-border p-2">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50" />
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50 dark:text-muted-foreground" />
             <input
               value={voiceQuery}
               onChange={(e) => setVoiceQuery(e.target.value)}
               autoFocus
               aria-label={t('agentBar.searchVoice')}
               placeholder={t('agentBar.searchVoice')}
-              className="h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+              className="h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/50 dark:placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
             />
           </div>
         </div>
         <div className="max-h-80 overflow-y-auto p-1">
           {visibleProviderGroups.length === 0 && (
-            <div className="px-3 py-6 text-center text-sm text-muted-foreground/60">
+            <div className="px-3 py-6 text-center text-sm text-muted-foreground/60 dark:text-muted-foreground">
               {t('agentBar.noMatchingVoices')}
             </div>
           )}
           {visibleProviderGroups.map(({ provider, groups }) =>
             groups.map((group) => (
               <div key={`${provider.providerId}::${group.modelId}`}>
-                <div className="sticky top-0 bg-popover px-2 py-1 text-[11px] font-medium text-muted-foreground/60">
+                <div className="sticky top-0 bg-popover px-2 py-1 text-[11px] font-medium text-muted-foreground/60 dark:text-muted-foreground">
                   {group.modelId
                     ? `${provider.providerName} · ${group.modelName}`
                     : provider.providerName}
@@ -321,7 +323,7 @@ function AgentVoicePill({
                             'flex size-6 shrink-0 items-center justify-center rounded-sm transition-colors',
                             isPreviewing
                               ? 'text-primary'
-                              : 'text-muted-foreground/40 hover:text-muted-foreground',
+                              : 'text-muted-foreground/40 dark:text-muted-foreground/80 hover:text-muted-foreground',
                           )}
                         >
                           {isPreviewing ? (
@@ -476,7 +478,7 @@ function TeacherVoicePill({
       <div
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
-        className="flex items-center gap-1.5 h-6 w-[100px] rounded-full bg-muted/40 px-2.5 text-[11px] text-muted-foreground/30 shrink-0 cursor-not-allowed"
+        className="flex items-center gap-1.5 h-6 w-[100px] rounded-full bg-muted/40 px-2.5 text-[11px] text-muted-foreground/30 dark:text-muted-foreground/80 shrink-0 cursor-not-allowed"
       >
         <VolumeX className="size-3 shrink-0" />
         <span className="truncate flex-1 text-left">{displayName}</span>
@@ -515,29 +517,29 @@ function TeacherVoicePill({
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        <div className="border-b border-border/50 p-2">
+        <div className="border-b border-border/50 dark:border-border p-2">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50" />
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50 dark:text-muted-foreground" />
             <input
               value={voiceQuery}
               onChange={(e) => setVoiceQuery(e.target.value)}
               autoFocus
               aria-label={t('agentBar.searchVoice')}
               placeholder={t('agentBar.searchVoice')}
-              className="h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+              className="h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/50 dark:placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
             />
           </div>
         </div>
         <div className="max-h-80 overflow-y-auto p-1">
           {visibleProviderGroups.length === 0 && (
-            <div className="px-3 py-6 text-center text-sm text-muted-foreground/60">
+            <div className="px-3 py-6 text-center text-sm text-muted-foreground/60 dark:text-muted-foreground">
               {t('agentBar.noMatchingVoices')}
             </div>
           )}
           {visibleProviderGroups.map(({ provider, groups }) =>
             groups.map((group) => (
               <div key={`${provider.providerId}::${group.modelId}`}>
-                <div className="sticky top-0 bg-popover px-2 py-1 text-[11px] font-medium text-muted-foreground/60">
+                <div className="sticky top-0 bg-popover px-2 py-1 text-[11px] font-medium text-muted-foreground/60 dark:text-muted-foreground">
                   {group.modelId
                     ? `${provider.providerName} · ${group.modelName}`
                     : provider.providerName}
@@ -589,7 +591,7 @@ function TeacherVoicePill({
                             'flex size-6 shrink-0 items-center justify-center rounded-sm transition-colors',
                             isPreviewing
                               ? 'text-primary'
-                              : 'text-muted-foreground/40 hover:text-muted-foreground',
+                              : 'text-muted-foreground/40 dark:text-muted-foreground/80 hover:text-muted-foreground',
                           )}
                         >
                           {isPreviewing ? (
@@ -639,8 +641,6 @@ export function AgentBar() {
   const allAgents = listAgents();
   const agents = allAgents.filter((a) => !a.isGenerated);
   const teacherAgent = agents.find((a) => a.role === 'teacher');
-  const selectedAgents = agents.filter((a) => selectedAgentIds.includes(a.id));
-  const nonTeacherSelected = selectedAgents.filter((a) => a.role !== 'teacher');
 
   // Single source of truth for selectable provider+voice options (enabled
   // providers + opt-in browser-native), shared with discussion TTS (#665).
@@ -717,68 +717,6 @@ export function AgentBar() {
     return translated !== key ? translated : agent.role;
   };
 
-  const avatarRow = (
-    <div className="flex items-center gap-1.5 shrink-0">
-      {teacherAgent && (
-        <div className="size-8 rounded-full overflow-hidden ring-2 ring-blue-400/40 dark:ring-blue-500/30 shrink-0">
-          <img
-            src={teacherAgent.avatar}
-            alt={getAgentName(teacherAgent)}
-            className="size-full object-cover"
-          />
-        </div>
-      )}
-
-      {agentMode === 'auto' ? (
-        <>
-          <div className="flex -space-x-2">
-            {agents.find((a) => a.role === 'assistant') && (
-              <div className="size-6 rounded-full overflow-hidden ring-[1.5px] ring-background">
-                <img
-                  src={agents.find((a) => a.role === 'assistant')!.avatar}
-                  alt=""
-                  className="size-full object-cover"
-                />
-              </div>
-            )}
-          </div>
-          <Shuffle className="size-4 text-violet-400 dark:text-violet-500" />
-        </>
-      ) : (
-        <>
-          {nonTeacherSelected.length > 0 && (
-            <div className="flex -space-x-2">
-              {nonTeacherSelected.slice(0, 4).map((agent) => (
-                <div
-                  key={agent.id}
-                  className="size-6 rounded-full overflow-hidden ring-[1.5px] ring-background"
-                >
-                  <img
-                    src={agent.avatar}
-                    alt={getAgentName(agent)}
-                    className="size-full object-cover"
-                  />
-                </div>
-              ))}
-              {nonTeacherSelected.length > 4 && (
-                <div className="size-6 rounded-full bg-muted ring-[1.5px] ring-background flex items-center justify-center">
-                  <span className="text-[9px] font-bold text-muted-foreground">
-                    +{nonTeacherSelected.length - 4}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
-      {ttsEnabled ? (
-        <Volume2 className="size-3.5 text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors" />
-      ) : (
-        <VolumeX className="size-3.5 text-muted-foreground/30" />
-      )}
-    </div>
-  );
-
   const renderAgentRow = (agent: AgentConfig, agentIndex: number, isTeacher: boolean) => {
     const isSelected = isTeacher || selectedAgentIds.includes(agent.id);
     return (
@@ -806,7 +744,7 @@ export function AgentBar() {
         <span className="text-[13px] font-medium truncate min-w-0 flex-1">
           {getAgentName(agent)}
         </span>
-        <span className="text-[10px] text-muted-foreground/50 shrink-0 w-[52px] text-right">
+        <span className="text-[10px] text-muted-foreground/50 dark:text-muted-foreground shrink-0 w-[52px] text-right">
           {getAgentRole(agent)}
         </span>
         <AgentVoicePill
@@ -820,24 +758,20 @@ export function AgentBar() {
   };
 
   return (
-    <div ref={containerRef} className="relative w-96">
+    <div ref={containerRef} className="relative shrink-0">
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            className={cn(
-              'group flex items-center gap-2 cursor-pointer rounded-full px-2.5 py-2 transition-all w-full',
-              'border border-border/50 text-muted-foreground/70 hover:text-foreground hover:bg-muted/60',
-            )}
+            aria-expanded={open}
+            className={cn('group', open ? labelPillActive : labelPillMuted)}
             onClick={() => setOpen(!open)}
           >
-            <span className="text-xs text-muted-foreground/60 group-hover:text-muted-foreground transition-colors hidden sm:block font-medium flex-1 text-left truncate">
-              {open ? t('agentBar.expandedTitle') : t('agentBar.readyToLearn')}
-            </span>
-            {avatarRow}
+            <Users className="size-4 shrink-0" />
+            <span className="hidden sm:inline">{t('toolbar.agents')}</span>
             {open ? (
-              <ChevronUp className="size-3 text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors" />
+              <ChevronUp className="size-3.5 shrink-0 opacity-60" />
             ) : (
-              <ChevronDown className="size-3 text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors" />
+              <ChevronDown className="size-3.5 shrink-0 opacity-60" />
             )}
           </button>
         </TooltipTrigger>
@@ -923,10 +857,10 @@ export function AgentBar() {
                   </div>
                   <div className="flex-1" />
                   <div className="text-center space-y-1">
-                    <p className="text-[11px] text-muted-foreground/60">
+                    <p className="text-[11px] text-muted-foreground/60 dark:text-muted-foreground">
                       {t('settings.agentModeAutoDesc')}
                     </p>
-                    <p className="text-[10px] text-muted-foreground/40">
+                    <p className="text-[10px] text-muted-foreground/40 dark:text-muted-foreground/80">
                       {t('agentBar.voiceAutoAssign')}
                     </p>
                   </div>

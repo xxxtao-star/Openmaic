@@ -33,13 +33,18 @@ import type {
 } from '@/lib/types/provider';
 import {
   getDefaultThinkingConfig,
-  getThinkingDisplayValue,
   getThinkingConfigKey,
   normalizeThinkingConfig,
   supportsConfigurableThinking,
 } from '@/lib/ai/thinking-config';
 import type { SettingsSection } from '@/lib/types/settings';
 import { MediaPopover } from '@/components/generation/media-popover';
+import {
+  iconControlCls,
+  iconControlActive,
+  iconControlMuted,
+  labelPillCls,
+} from '@/components/generation/control-styles';
 import { getAcceptStringForProviders, isMimeSupportedByProviders } from '@/lib/document/mime';
 import {
   MAX_DOCUMENT_BUNDLE_FILES,
@@ -85,12 +90,6 @@ export function GenerationToolbar({
   materialsLocked = false,
 }: GenerationToolbarProps) {
   const { t } = useI18n();
-  const currentProviderId = useSettingsStore((s) => s.providerId);
-  const currentModelId = useSettingsStore((s) => s.modelId);
-  const providersConfig = useSettingsStore((s) => s.providersConfig);
-  const setModel = useSettingsStore((s) => s.setModel);
-  const thinkingConfigs = useSettingsStore((s) => s.thinkingConfigs);
-  const setThinkingConfig = useSettingsStore((s) => s.setThinkingConfig);
   const pdfProviderId = useSettingsStore((s) => s.pdfProviderId);
   const pdfProvidersConfig = useSettingsStore((s) => s.pdfProvidersConfig);
   const setPDFProvider = useSettingsStore((s) => s.setPDFProvider);
@@ -110,35 +109,6 @@ export function GenerationToolbar({
   const webSearchAvailable = Object.values(WEB_SEARCH_PROVIDERS).some((provider) =>
     isWebSearchProviderConfigured(provider, webSearchProvidersConfig[provider.id]),
   );
-
-  // Configured LLM providers (only those with valid credentials + models + endpoint)
-  const configuredProviders = providersConfig
-    ? Object.entries(providersConfig)
-        .filter(([, config]) => isLLMProviderConfigured(config))
-        .map(([id, config]) => ({
-          id: id as ProviderId,
-          name: config.name,
-          icon: config.icon,
-          isServerConfigured: config.isServerConfigured,
-          models:
-            config.isServerConfigured && !config.apiKey && config.serverModels?.length
-              ? config.models.filter((model) =>
-                  config.serverModels?.some((serverModelId) =>
-                    modelIdsMatch(id, model.id, serverModelId),
-                  ),
-                )
-              : config.models,
-        }))
-    : [];
-
-  const currentProviderConfig = providersConfig?.[currentProviderId];
-  const currentModel = findModelById(
-    currentProviderId,
-    currentProviderConfig?.models,
-    currentModelId,
-  );
-  const currentThinkingConfig =
-    thinkingConfigs[getThinkingConfigKey(currentProviderId, currentModelId)];
 
   // Course material handler. `plain-text` is always active alongside the
   // user-selected extractor so txt/md files remain uploadable without
@@ -221,102 +191,225 @@ export function GenerationToolbar({
     onCourseMaterialsAdd(dedupedFiles);
   };
 
-  // ─── Pill button helper ─────────────────────────────
-  const pillCls =
-    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all cursor-pointer select-none whitespace-nowrap border';
-  const pillMuted = `${pillCls} border-border/50 text-muted-foreground/70 hover:text-foreground hover:bg-muted/60`;
-  const pillActive = `${pillCls} border-violet-200/60 dark:border-violet-700/50 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300`;
-
   return (
-    <div className="flex items-center gap-1 flex-wrap">
-      {/* ── Model selector ── */}
-      {configuredProviders.length > 0 ? (
-        <ModelSettingsPopover
-          configuredProviders={configuredProviders}
-          currentProviderId={currentProviderId}
-          currentModelId={currentModelId}
-          currentProviderConfig={currentProviderConfig}
-          currentModel={currentModel}
-          setModel={setModel}
-          thinkingConfig={currentThinkingConfig}
-          onThinkingChange={(config) =>
-            setThinkingConfig(currentProviderId, currentModelId, config)
-          }
-          t={t}
-        />
-      ) : (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => onSettingsOpen('providers')}
-              className={cn(
-                pillCls,
-                'text-amber-600 dark:text-amber-400 animate-pulse',
-                'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50',
-              )}
+    <div className="flex items-center gap-1.5">
+      {/* ── Attachments (extractor + upload) ── */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            aria-label={t('toolbar.courseMaterialUpload')}
+            className={courseMaterials.length > 0 ? iconControlActive : iconControlMuted}
+          >
+            <Paperclip className="size-[18px]" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72 p-0">
+          {/* Extractor selector */}
+          <div className="flex items-center gap-2 px-3 pt-3 pb-2">
+            <span className="text-xs font-medium text-muted-foreground shrink-0">
+              {t('toolbar.documentExtractor')}
+            </span>
+            <Select
+              value={pdfProviderId}
+              onValueChange={(v) => setPDFProvider(v as PDFProviderId)}
+              disabled={materialsLocked}
             >
-              <Bot className="size-3.5" />
-              <span>{t('toolbar.configureProvider')}</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{t('toolbar.configureProviderHint')}</TooltipContent>
-        </Tooltip>
-      )}
+              <SelectTrigger className="h-7 text-xs flex-1 min-w-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(PDF_PROVIDERS).map((provider) => {
+                  const cfg = pdfProvidersConfig[provider.id];
+                  // AliDocMind authenticates with an AK/SK pair rather than a
+                  // single apiKey — recognize either credential shape.
+                  const hasCredentials =
+                    !!cfg?.apiKey || (!!cfg?.accessKeyId && !!cfg?.accessKeySecret);
+                  const available =
+                    !provider.requiresApiKey || hasCredentials || !!cfg?.isServerConfigured;
+                  return (
+                    <SelectItem key={provider.id} value={provider.id} disabled={!available}>
+                      <div className={cn('flex items-center gap-1.5', !available && 'opacity-50')}>
+                        {provider.icon && (
+                          <img src={provider.icon} alt={provider.name} className="w-3.5 h-3.5" />
+                        )}
+                        {provider.name}
+                        {cfg?.isServerConfigured && (
+                          <span className="text-[9px] px-1 py-0 rounded border text-muted-foreground">
+                            {t('settings.serverConfigured')}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
 
-      <div className="flex min-w-0 items-center gap-1">
-        {/* ── Separator ── */}
-        <div className="w-px h-4 bg-border/60 mx-1" />
+          {/* Upload area / file info */}
+          <div className="px-3 pb-3">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept={acceptForCurrentProvider}
+              multiple
+              disabled={materialsLocked}
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []);
+                if (files.length > 0) handleFilesSelect(files);
+                e.target.value = '';
+              }}
+            />
+            <div className="space-y-3">
+              <div
+                className={cn(
+                  'flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 transition-colors',
+                  isDragging
+                    ? 'border-violet-400 bg-violet-50 dark:bg-violet-950/20'
+                    : 'border-muted-foreground/20 dark:border-muted-foreground/50 hover:border-violet-300',
+                  materialsLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+                )}
+                onClick={() => {
+                  if (!materialsLocked) fileInputRef.current?.click();
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (!materialsLocked) setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  if (materialsLocked) return;
+                  const files = Array.from(e.dataTransfer.files ?? []);
+                  if (files.length > 0) handleFilesSelect(files);
+                }}
+              >
+                <Paperclip className="size-5 text-muted-foreground/50 dark:text-muted-foreground mb-1.5" />
+                <p className="text-xs font-medium">{t('toolbar.courseMaterialUpload')}</p>
+                <p className="text-[10px] text-muted-foreground/60 dark:text-muted-foreground mt-0.5 text-center">
+                  {t('upload.courseMaterialSizeLimit')}
+                </p>
+                <p className="text-[10px] text-muted-foreground/60 dark:text-muted-foreground text-center">
+                  {t('upload.courseMaterialCountLimit', { n: MAX_DOCUMENT_BUNDLE_FILES })}
+                </p>
+              </div>
 
-        {/* ── Course material (extractor + upload) combined Popover ── */}
+              {courseMaterials.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-muted-foreground/70 dark:text-muted-foreground">
+                    {t('toolbar.courseMaterialMergeOrder')}
+                  </p>
+                  <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+                    {[...courseMaterials]
+                      .sort((a, b) => a.order - b.order)
+                      .map((file) => (
+                        <div
+                          key={file.id}
+                          className="flex items-center gap-2 rounded-lg border border-border/50 dark:border-border px-2 py-2"
+                        >
+                          <div className="size-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+                            <FileText className="size-4 text-violet-600 dark:text-violet-400" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">
+                              {file.order}. {file.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => onCourseMaterialRemove(file.id)}
+                            disabled={materialsLocked}
+                            className={cn(
+                              'size-6 rounded-full inline-flex items-center justify-center text-muted-foreground transition-colors',
+                              materialsLocked ? 'cursor-not-allowed opacity-40' : 'hover:bg-muted',
+                            )}
+                            aria-label={t('toolbar.removeCourseMaterial')}
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* ── Media (image / video / voice) ── */}
+      <MediaPopover onSettingsOpen={onSettingsOpen} />
+
+      {/* ── Web Search ── */}
+      {webSearchAvailable ? (
         <Popover>
           <PopoverTrigger asChild>
-            {courseMaterials.length > 0 ? (
-              <button className={pillActive}>
-                <Paperclip className="size-3.5" />
-                <span className="max-w-[140px] truncate">
-                  {courseMaterials.length === 1
-                    ? courseMaterials[0].name
-                    : t('toolbar.courseMaterialsSelected', { n: courseMaterials.length })}
-                </span>
-              </button>
-            ) : (
-              <button className={pillMuted}>
-                <Paperclip className="size-3.5" />
-              </button>
-            )}
+            <button
+              aria-label={t('toolbar.webSearch')}
+              className={webSearch ? iconControlActive : iconControlMuted}
+            >
+              <Globe2 className={cn('size-[18px]', webSearch && 'animate-pulse')} />
+            </button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-72 p-0">
-            {/* Extractor selector */}
-            <div className="flex items-center gap-2 px-3 pt-3 pb-2">
+          <PopoverContent align="start" className="w-64 p-3 space-y-3">
+            {/* Toggle */}
+            <button
+              onClick={() => {
+                if (!selectedWebSearchAvailable) return;
+                onWebSearchChange(!webSearch);
+              }}
+              disabled={materialsLocked}
+              className={cn(
+                'w-full flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all',
+                webSearch
+                  ? 'bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800'
+                  : 'border-border hover:bg-muted/50',
+                !selectedWebSearchAvailable && 'opacity-60',
+                materialsLocked && 'opacity-60 cursor-not-allowed',
+              )}
+            >
+              <Globe2
+                className={cn(
+                  'size-4 shrink-0',
+                  webSearch ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground',
+                )}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium">
+                  {webSearch ? t('toolbar.webSearchOn') : t('toolbar.webSearchOff')}
+                </p>
+                <p className="text-[10px] text-muted-foreground/70 dark:text-muted-foreground mt-0.5">
+                  {t('toolbar.webSearchDesc')}
+                </p>
+              </div>
+            </button>
+
+            {/* Provider selector */}
+            <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-muted-foreground shrink-0">
-                {t('toolbar.documentExtractor')}
+                {t('toolbar.webSearchProvider')}
               </span>
               <Select
-                value={pdfProviderId}
-                onValueChange={(v) => setPDFProvider(v as PDFProviderId)}
-                disabled={materialsLocked}
+                value={webSearchProviderId}
+                onValueChange={(v) => setWebSearchProvider(v as WebSearchProviderId)}
               >
                 <SelectTrigger className="h-7 text-xs flex-1 min-w-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(PDF_PROVIDERS).map((provider) => {
-                    const cfg = pdfProvidersConfig[provider.id];
-                    // AliDocMind authenticates with an AK/SK pair rather than a
-                    // single apiKey — recognize either credential shape.
-                    const hasCredentials =
-                      !!cfg?.apiKey || (!!cfg?.accessKeyId && !!cfg?.accessKeySecret);
-                    const available =
-                      !provider.requiresApiKey || hasCredentials || !!cfg?.isServerConfigured;
+                  {Object.values(WEB_SEARCH_PROVIDERS).map((provider) => {
+                    const cfg = webSearchProvidersConfig[provider.id];
+                    const available = isWebSearchProviderConfigured(provider, cfg);
                     return (
                       <SelectItem key={provider.id} value={provider.id} disabled={!available}>
                         <div
                           className={cn('flex items-center gap-1.5', !available && 'opacity-50')}
                         >
-                          {provider.icon && (
-                            <img src={provider.icon} alt={provider.name} className="w-3.5 h-3.5" />
-                          )}
-                          {provider.name}
+                          {getWebSearchProviderDisplayName(provider.id, t)}
                           {cfg?.isServerConfigured && (
                             <span className="text-[9px] px-1 py-0 rounded border text-muted-foreground">
                               {t('settings.serverConfigured')}
@@ -329,208 +422,25 @@ export function GenerationToolbar({
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Upload area / file info */}
-            <div className="px-3 pb-3">
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept={acceptForCurrentProvider}
-                multiple
-                disabled={materialsLocked}
-                onChange={(e) => {
-                  const files = Array.from(e.target.files ?? []);
-                  if (files.length > 0) handleFilesSelect(files);
-                  e.target.value = '';
-                }}
-              />
-              <div className="space-y-3">
-                <div
-                  className={cn(
-                    'flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 transition-colors',
-                    isDragging
-                      ? 'border-violet-400 bg-violet-50 dark:bg-violet-950/20'
-                      : 'border-muted-foreground/20 hover:border-violet-300',
-                    materialsLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
-                  )}
-                  onClick={() => {
-                    if (!materialsLocked) fileInputRef.current?.click();
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    if (!materialsLocked) setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setIsDragging(false);
-                    if (materialsLocked) return;
-                    const files = Array.from(e.dataTransfer.files ?? []);
-                    if (files.length > 0) handleFilesSelect(files);
-                  }}
-                >
-                  <Paperclip className="size-5 text-muted-foreground/50 mb-1.5" />
-                  <p className="text-xs font-medium">{t('toolbar.courseMaterialUpload')}</p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 text-center">
-                    {t('upload.courseMaterialSizeLimit')}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/60 text-center">
-                    {t('upload.courseMaterialCountLimit', { n: MAX_DOCUMENT_BUNDLE_FILES })}
-                  </p>
-                </div>
-
-                {courseMaterials.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-[10px] text-muted-foreground/70">
-                      {t('toolbar.courseMaterialMergeOrder')}
-                    </p>
-                    <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
-                      {[...courseMaterials]
-                        .sort((a, b) => a.order - b.order)
-                        .map((file) => (
-                          <div
-                            key={file.id}
-                            className="flex items-center gap-2 rounded-lg border border-border/50 px-2 py-2"
-                          >
-                            <div className="size-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-                              <FileText className="size-4 text-violet-600 dark:text-violet-400" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium truncate">
-                                {file.order}. {file.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {(file.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => onCourseMaterialRemove(file.id)}
-                              disabled={materialsLocked}
-                              className={cn(
-                                'size-6 rounded-full inline-flex items-center justify-center text-muted-foreground transition-colors',
-                                materialsLocked
-                                  ? 'cursor-not-allowed opacity-40'
-                                  : 'hover:bg-muted',
-                              )}
-                              aria-label={t('toolbar.removeCourseMaterial')}
-                            >
-                              <X className="size-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
           </PopoverContent>
         </Popover>
-
-        {/* ── Web Search ── */}
-        {webSearchAvailable ? (
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className={webSearch ? pillActive : pillMuted}>
-                <Globe2 className={cn('size-3.5', webSearch && 'animate-pulse')} />
-                {webSearch && (
-                  <span>
-                    {WEB_SEARCH_PROVIDERS[webSearchProviderId]
-                      ? getWebSearchProviderDisplayName(webSearchProviderId, t)
-                      : 'Search'}
-                  </span>
-                )}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-64 p-3 space-y-3">
-              {/* Toggle */}
-              <button
-                onClick={() => {
-                  if (!selectedWebSearchAvailable) return;
-                  onWebSearchChange(!webSearch);
-                }}
-                disabled={materialsLocked}
-                className={cn(
-                  'w-full flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all',
-                  webSearch
-                    ? 'bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800'
-                    : 'border-border hover:bg-muted/50',
-                  !selectedWebSearchAvailable && 'opacity-60',
-                  materialsLocked && 'opacity-60 cursor-not-allowed',
-                )}
-              >
-                <Globe2
-                  className={cn(
-                    'size-4 shrink-0',
-                    webSearch ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground',
-                  )}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium">
-                    {webSearch ? t('toolbar.webSearchOn') : t('toolbar.webSearchOff')}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                    {t('toolbar.webSearchDesc')}
-                  </p>
-                </div>
-              </button>
-
-              {/* Provider selector */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground shrink-0">
-                  {t('toolbar.webSearchProvider')}
-                </span>
-                <Select
-                  value={webSearchProviderId}
-                  onValueChange={(v) => setWebSearchProvider(v as WebSearchProviderId)}
-                >
-                  <SelectTrigger className="h-7 text-xs flex-1 min-w-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(WEB_SEARCH_PROVIDERS).map((provider) => {
-                      const cfg = webSearchProvidersConfig[provider.id];
-                      const available = isWebSearchProviderConfigured(provider, cfg);
-                      return (
-                        <SelectItem key={provider.id} value={provider.id} disabled={!available}>
-                          <div
-                            className={cn('flex items-center gap-1.5', !available && 'opacity-50')}
-                          >
-                            {getWebSearchProviderDisplayName(provider.id, t)}
-                            {cfg?.isServerConfigured && (
-                              <span className="text-[9px] px-1 py-0 rounded border text-muted-foreground">
-                                {t('settings.serverConfigured')}
-                              </span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-            </PopoverContent>
-          </Popover>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className={cn(pillCls, 'text-muted-foreground/40 cursor-not-allowed')}
-                disabled
-              >
-                <Globe2 className="size-3.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>{t('toolbar.webSearchNoProvider')}</TooltipContent>
-          </Tooltip>
-        )}
-
-        {/* ── Separator ── */}
-        <div className="w-px h-4 bg-border/60 mx-1" />
-
-        {/* ── Media popover ── */}
-        <MediaPopover onSettingsOpen={onSettingsOpen} />
-      </div>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              aria-label={t('toolbar.webSearch')}
+              className={cn(
+                iconControlCls,
+                'border-border/50 dark:border-border text-muted-foreground/40 dark:text-muted-foreground/80 cursor-not-allowed',
+              )}
+              disabled
+            >
+              <Globe2 className="size-[18px]" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{t('toolbar.webSearchNoProvider')}</TooltipContent>
+        </Tooltip>
+      )}
     </div>
   );
 }
@@ -542,15 +452,6 @@ function formatThinkingValue(value?: string, t?: (key: string) => string) {
     return t(`toolbar.${value}`);
   }
   return value === 'xhigh' ? 'x-high' : value;
-}
-
-function formatCompactThinkingValue(value?: string, t?: (key: string) => string) {
-  if (!value) return '';
-  const numericValue = Number(value);
-  if (Number.isFinite(numericValue) && value.trim() !== '') {
-    return numericValue >= 10000 ? `${Math.round(numericValue / 1000)}k` : `${numericValue}`;
-  }
-  return formatThinkingValue(value, t);
 }
 
 function InlineThinkingControl({
@@ -769,6 +670,97 @@ function InlineThinkingControl({
   );
 }
 
+// ─── ModelSelectorPill ──────────────────────────────────
+/**
+ * The provider/model picker, standalone.
+ *
+ * It used to sit at the head of the toolbar row, but the composer's bottom row
+ * now holds a fixed set of four controls (attachments, media, web search,
+ * agents), so the model picker is mounted separately in the composer header
+ * instead. The store reads live here rather than in `GenerationToolbar` because
+ * this is now their only consumer.
+ */
+export function ModelSelectorPill({
+  onSettingsOpen,
+}: {
+  onSettingsOpen: (section?: SettingsSection) => void;
+}) {
+  const { t } = useI18n();
+  const currentProviderId = useSettingsStore((s) => s.providerId);
+  const currentModelId = useSettingsStore((s) => s.modelId);
+  const providersConfig = useSettingsStore((s) => s.providersConfig);
+  const setModel = useSettingsStore((s) => s.setModel);
+  const thinkingConfigs = useSettingsStore((s) => s.thinkingConfigs);
+  const setThinkingConfig = useSettingsStore((s) => s.setThinkingConfig);
+
+  // Configured LLM providers (only those with valid credentials + models + endpoint)
+  const configuredProviders = providersConfig
+    ? Object.entries(providersConfig)
+        .filter(([, config]) => isLLMProviderConfigured(config))
+        .map(([id, config]) => ({
+          id: id as ProviderId,
+          name: config.name,
+          icon: config.icon,
+          isServerConfigured: config.isServerConfigured,
+          models:
+            config.isServerConfigured && !config.apiKey && config.serverModels?.length
+              ? config.models.filter((model) =>
+                  config.serverModels?.some((serverModelId) =>
+                    modelIdsMatch(id, model.id, serverModelId),
+                  ),
+                )
+              : config.models,
+        }))
+    : [];
+
+  const currentProviderConfig = providersConfig?.[currentProviderId];
+  const currentModel = findModelById(
+    currentProviderId,
+    currentProviderConfig?.models,
+    currentModelId,
+  );
+  const currentThinkingConfig =
+    thinkingConfigs[getThinkingConfigKey(currentProviderId, currentModelId)];
+
+  if (configuredProviders.length === 0) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => onSettingsOpen('providers')}
+            className={cn(
+              labelPillCls,
+              // Header row: stays 32px to line up with the mode selector, even
+              // though the composer's bottom controls are taller.
+              'h-8 px-2.5 text-xs',
+              'border-transparent text-amber-600 dark:text-amber-400 animate-pulse',
+              'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-950/50',
+            )}
+          >
+            <Bot className="size-3.5" />
+            <span>{t('toolbar.configureProvider')}</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>{t('toolbar.configureProviderHint')}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <ModelSettingsPopover
+      configuredProviders={configuredProviders}
+      currentProviderId={currentProviderId}
+      currentModelId={currentModelId}
+      currentProviderConfig={currentProviderConfig}
+      currentModel={currentModel}
+      setModel={setModel}
+      thinkingConfig={currentThinkingConfig}
+      onThinkingChange={(config) => setThinkingConfig(currentProviderId, currentModelId, config)}
+      t={t}
+    />
+  );
+}
+
 // ─── ModelSettingsPopover (provider + model picker) ─────
 interface ConfiguredProvider {
   id: ProviderId;
@@ -844,11 +836,6 @@ function ModelSettingsPopover({
   // exists, which guarantees a concrete model — so the label is always
   // provider / model (no "Select Model" fallback state).
   const currentModelLabel = currentModel?.name || currentModelId;
-  const currentThinkingValue = getThinkingDisplayValue(
-    currentModel?.capabilities?.thinking,
-    thinkingConfig,
-  );
-  const currentThinkingLabel = formatCompactThinkingValue(currentThinkingValue, t);
 
   return (
     <Popover
@@ -868,25 +855,27 @@ function ModelSettingsPopover({
               aria-label={`${currentProviderName} / ${currentModelLabel}`}
               className={cn(
                 'inline-flex h-8 min-w-0 items-center gap-1.5 rounded-full border px-2 text-xs font-medium transition-all',
-                'border-violet-200/70 bg-violet-50 text-violet-700 hover:bg-violet-100 dark:border-violet-800/70 dark:bg-violet-950/30 dark:text-violet-300',
+                'border-violet-200/70 bg-violet-50 text-violet-700 hover:bg-violet-100',
+                // Dark mode needs a chip that actually reads as a chip: violet-950/30
+                // over the composer's own dark card composited to near-black.
+                'dark:border-violet-500/45 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:bg-violet-500/25',
                 currentModelId &&
-                  'shadow-[0_0_0_1px_rgba(124,58,237,0.12)] dark:shadow-[0_0_0_1px_rgba(167,139,250,0.16)]',
+                  'shadow-[0_0_0_1px_rgba(124,58,237,0.12)] dark:shadow-[0_0_0_1px_rgba(167,139,250,0.3)]',
               )}
             >
               {currentProviderIcon ? (
                 <img
                   src={currentProviderIcon}
                   alt={currentProviderName}
-                  className="size-4 shrink-0 rounded-sm"
+                  // Provider marks are flat SVGs — OpenAI's is fill="#000", which
+                  // vanishes on a dark chip. A light plate keeps every logo legible
+                  // without inverting the coloured ones.
+                  className="size-4 shrink-0 rounded-sm dark:bg-white dark:p-px"
                 />
               ) : (
                 <Bot className="size-3.5 shrink-0" />
               )}
-              {currentThinkingLabel && (
-                <span className="shrink-0 rounded-full bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-violet-700 ring-1 ring-violet-200/70 dark:bg-violet-950/50 dark:text-violet-200 dark:ring-violet-800/70">
-                  {currentThinkingLabel}
-                </span>
-              )}
+              <span className="hidden max-w-[8.5rem] truncate sm:inline">{currentModelLabel}</span>
             </button>
           </PopoverTrigger>
         </TooltipTrigger>

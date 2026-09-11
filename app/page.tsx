@@ -1,26 +1,21 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useMemo, useRef, useDeferredValue } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowRight,
-  Check,
+  Bot,
   ChevronDown,
   ChevronRight,
   Clock,
   Copy,
   Folder,
   FolderPlus,
-  ImagePlus,
   Pencil,
   Trash2,
   Search,
   Settings,
-  Sun,
-  Moon,
-  Monitor,
-  ChevronUp,
   Upload,
   Sparkles,
   Atom,
@@ -30,17 +25,16 @@ import {
 } from 'lucide-react';
 import { useI18n } from '@/lib/hooks/use-i18n';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { ThemeToggle } from '@/components/site-header/theme-toggle';
 import { createLogger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { InputGroup, InputGroupInput, InputGroupButton } from '@/components/ui/input-group';
-import { Textarea as UITextarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { SettingsDialog } from '@/components/settings';
-import { GenerationToolbar } from '@/components/generation/generation-toolbar';
+import { GenerationToolbar, ModelSelectorPill } from '@/components/generation/generation-toolbar';
 import { DeepThinkingButton } from '@/components/generation/deep-thinking-button';
 import { AgentBar } from '@/components/agent/agent-bar';
 import Image from 'next/image';
-import { useTheme } from '@/lib/hooks/use-theme';
 import { nanoid } from 'nanoid';
 import { deleteDocumentBlob, storeDocumentBlob } from '@/lib/utils/image-storage';
 import { normalizeDocumentMimeType } from '@/lib/document/mime';
@@ -55,7 +49,7 @@ import type {
 } from '@/lib/types/generation';
 import { useSettingsStore } from '@/lib/store/settings';
 import { hasUsableLLMProvider } from '@/lib/store/settings-validation';
-import { useUserProfileStore, AVATAR_OPTIONS } from '@/lib/store/user-profile';
+import { useUserProfileStore } from '@/lib/store/user-profile';
 import {
   StageListItem,
   listStages,
@@ -80,15 +74,9 @@ import type { Slide } from '@openmaic/dsl';
 import { useMediaGenerationStore } from '@/lib/store/media-generation';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDraftCache } from '@/lib/hooks/use-draft-cache';
-import { SpeechButton } from '@/components/audio/speech-button';
 import { useImportClassroom } from '@/lib/import/use-import-classroom';
-import {
-  isProWorkbenchEnabled,
-  isPptxImportEnabled,
-  shouldShowVocationalTestUi,
-} from '@/lib/config/feature-flags';
+import { isProWorkbenchEnabled, isPptxImportEnabled } from '@/lib/config/feature-flags';
 import { useImportPptx } from '@/lib/import/use-import-pptx';
 import { ProBadge } from '@/components/workbench/ProBadge';
 import { arrivedByProSwap, startProSwap } from '@/lib/workbench/pro-swap';
@@ -129,13 +117,11 @@ const initialFormState: FormState = {
 
 function HomePage() {
   const { t } = useI18n();
-  const { theme, setTheme } = useTheme();
   const router = useRouter();
   // Do not replay the classic hero's entrance after the route handoff already
   // carried the lockup and composer into place.
   const [swapped] = useState(arrivedByProSwap);
   const heroEnter = (from: Record<string, number>) => (swapped ? false : from);
-  const showVocationalTestUi = shouldShowVocationalTestUi();
   const workbenchBuildEnabled = isProWorkbenchEnabled();
   const [workbenchRuntimeEnabled, setWorkbenchRuntimeEnabled] = useState(
     workbenchRuntimeCache === true,
@@ -223,7 +209,6 @@ function HomePage() {
     setForm((prev) => (prev.requirement ? prev : { ...prev, requirement: cachedRequirement }));
   }, [cachedRequirement]);
 
-  const [themeOpen, setThemeOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // True while the Generate click drains upload-time ingests and builds the
   // generation session. Doubles as the guard flag that freezes the course
@@ -263,18 +248,6 @@ function HomePage() {
     setThumbnails(slides);
     window.setTimeout(() => revokeThumbnailSlideMediaUrls(previous), 0);
   };
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    if (!themeOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
-        setThemeOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [themeOpen]);
 
   const loadClassrooms = async () => {
     try {
@@ -704,7 +677,7 @@ function HomePage() {
   };
 
   return (
-    <div className="min-h-[100dvh] w-full bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex flex-col items-center p-4 pt-16 md:p-8 md:pt-16 overflow-x-hidden">
+    <div className="min-h-[100dvh] w-full bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex flex-col items-center p-4 pt-6 md:p-8 md:pt-8 overflow-x-hidden">
       <input
         ref={fileInputRef}
         type="file"
@@ -727,69 +700,10 @@ function HomePage() {
         className="fixed top-4 right-4 z-50 flex items-center gap-1 bg-white/60 dark:bg-gray-800/60 backdrop-blur-md px-2 py-1.5 rounded-full border border-gray-100/50 dark:border-gray-700/50 shadow-sm"
       >
         {/* Language Selector */}
-        <LanguageSwitcher onOpen={() => setThemeOpen(false)} />
+        <LanguageSwitcher />
 
-        <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
-
-        {/* Theme Selector */}
-        <div className="relative">
-          <button
-            onClick={() => {
-              setThemeOpen(!themeOpen);
-            }}
-            className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all"
-          >
-            {theme === 'light' && <Sun className="w-4 h-4" />}
-            {theme === 'dark' && <Moon className="w-4 h-4" />}
-            {theme === 'system' && <Monitor className="w-4 h-4" />}
-          </button>
-          {themeOpen && (
-            <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden z-50 min-w-[140px]">
-              <button
-                onClick={() => {
-                  setTheme('light');
-                  setThemeOpen(false);
-                }}
-                className={cn(
-                  'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                  theme === 'light' &&
-                    'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                )}
-              >
-                <Sun className="w-4 h-4" />
-                {t('settings.themeOptions.light')}
-              </button>
-              <button
-                onClick={() => {
-                  setTheme('dark');
-                  setThemeOpen(false);
-                }}
-                className={cn(
-                  'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                  theme === 'dark' &&
-                    'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                )}
-              >
-                <Moon className="w-4 h-4" />
-                {t('settings.themeOptions.dark')}
-              </button>
-              <button
-                onClick={() => {
-                  setTheme('system');
-                  setThemeOpen(false);
-                }}
-                className={cn(
-                  'w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2',
-                  theme === 'system' &&
-                    'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-                )}
-              >
-                <Monitor className="w-4 h-4" />
-                {t('settings.themeOptions.system')}
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Theme Switcher — matches the pill's own hover idiom */}
+        <ThemeToggle className="text-gray-400 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white hover:shadow-sm" />
 
         <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700" />
 
@@ -797,7 +711,7 @@ function HomePage() {
         <div className="relative">
           <button
             onClick={() => setSettingsOpen(true)}
-            className="p-2 rounded-full text-gray-400 dark:text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 hover:shadow-sm transition-all group"
+            className="p-2 rounded-full text-gray-400 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white hover:shadow-sm transition-all group"
           >
             <Settings className="w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
           </button>
@@ -829,7 +743,7 @@ function HomePage() {
         initial={heroEnter({ opacity: 0, y: 20 })}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
-        className={cn('relative z-20 w-full max-w-[800px] flex flex-col items-center mt-[10vh]')}
+        className={cn('relative z-20 w-full max-w-[920px] flex flex-col items-center mt-[4vh]')}
       >
         {/* ── Brand lockup: drawn in code, so it scales with the viewport ── */}
         <div className="relative w-[480px] sm:w-[600px] md:w-[720px]" data-pro-morph="lockup">
@@ -843,7 +757,14 @@ function HomePage() {
               damping: 20,
             }}
           >
-            <Image src="/hero-brand.png" alt="芯火课堂" width={720} height={340} priority className="w-full h-auto drop-shadow-2xl" />
+            <Image
+              src="/hero-brand.png"
+              alt="芯火课堂"
+              width={720}
+              height={340}
+              priority
+              className="w-full h-auto drop-shadow-2xl"
+            />
           </motion.div>
           {workbenchEntryEnabled ? (
             <div
@@ -855,7 +776,6 @@ function HomePage() {
           ) : null}
         </div>
 
-
         {/* ── Unified input area ── */}
         <motion.div
           initial={heroEnter({ opacity: 0, scale: 0.97 })}
@@ -865,142 +785,89 @@ function HomePage() {
         >
           <div
             data-pro-morph="composer"
-            className="w-full rounded-2xl border border-indigo-400/25 bg-white/80 backdrop-blur-xl shadow-xl shadow-indigo-950/10 transition-shadow focus-within:border-indigo-400/45 focus-within:shadow-2xl focus-within:shadow-violet-500/[0.12] dark:border-indigo-400/20 dark:bg-slate-900/70 dark:shadow-black/30"
+            className="w-full rounded-3xl border border-indigo-400/25 bg-white/80 backdrop-blur-xl shadow-xl shadow-indigo-950/10 transition-shadow focus-within:border-indigo-400/45 focus-within:shadow-2xl focus-within:shadow-violet-500/[0.12] dark:border-indigo-400/20 dark:bg-slate-900/70 dark:shadow-black/30"
           >
-            {/* ── Prompt title + learning-mode selector ── */}
+            {/* ── Header: bot avatar + title + mode selector ── */}
             <div className="relative z-20 flex items-center justify-between gap-3 px-4 pt-3.5">
-              <div className="flex min-w-0 items-center gap-2">
-                <GreetingBar />
+              <div className="flex min-w-0 items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-violet-600 shadow-md shadow-cyan-500/25">
+                  <Bot className="size-4 text-white" />
+                </div>
                 <span className="flex items-center gap-1.5 truncate text-[13px] font-medium text-foreground/85">
                   {t('home.askPromptTitle')}
-                  <Sparkles className="size-3.5 shrink-0 text-violet-400" />
+                  <span className="text-violet-400">✦</span>
                 </span>
               </div>
-              <div className="shrink-0">
-                <Select
-                  value={
-                    form.vocationalTestMode
-                      ? 'vocational'
-                      : form.interactiveMode
-                        ? 'interactive'
-                        : 'standard'
-                  }
-                  onValueChange={(val) => {
-                    if (val === 'vocational') {
-                      setForm((p) => ({ ...p, interactiveMode: true, vocationalTestMode: true }));
-                    } else if (val === 'interactive') {
-                      setForm((p) => ({ ...p, interactiveMode: true, vocationalTestMode: false }));
-                      try { localStorage.setItem('interactiveModeEnabled', 'true'); } catch { /* */ }
-                    } else {
-                      setForm((p) => ({ ...p, interactiveMode: false, vocationalTestMode: false }));
-                      try { localStorage.setItem('interactiveModeEnabled', 'false'); } catch { /* */ }
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-7 gap-1 rounded-full border border-border/50 bg-background/60 px-3 text-[12px] font-medium shadow-none backdrop-blur-sm focus-visible:ring-1 focus-visible:ring-violet-400/60 [&_svg]:size-3">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent align="end" className="min-w-[148px]">
-                    <SelectItem value="standard" className="py-1.5 text-xs">
-                      {t('toolbar.modeStandard')}
-                    </SelectItem>
-                    <SelectItem value="interactive" className="py-1.5 text-xs">
-                      {t('toolbar.modeInteractive')}
-                    </SelectItem>
-                    {showVocationalTestUi && (
-                      <SelectItem value="vocational" className="py-1.5 text-xs">
-                        {t('toolbar.modeVocational')}
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Textarea */}
-            <textarea
-              ref={textareaRef}
-              placeholder={t('upload.requirementPlaceholder')}
-              className="w-full resize-none border-0 bg-transparent px-4 pt-2 pb-2 text-[13px] leading-relaxed placeholder:text-muted-foreground/40 focus:outline-none min-h-[140px] max-h-[300px]"
-              value={form.requirement}
-              onChange={(e) => updateForm('requirement', e.target.value)}
-              onKeyDown={handleKeyDown}
-              rows={5}
-            />
-
-            {/* Sample prompts */}
-            <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pb-1">
-              {(['home.samplePrompt1', 'home.samplePrompt2', 'home.samplePrompt3'] as const).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => updateForm('requirement', t(key))}
-                  className="truncate max-w-[240px] text-[11.5px] text-muted-foreground/55 hover:text-muted-foreground/90 transition-colors text-left"
-                >
-                  {t(key)}
-                </button>
-              ))}
-            </div>
-            {/* Toolbar row */}
-            <div className="px-3 pb-3 flex items-end gap-2">
-              <div className="flex-1 min-w-0">
-                <GenerationToolbar
-                  webSearch={form.webSearch}
-                  onWebSearchChange={(v) => updateForm('webSearch', v)}
+              <div className="flex shrink-0 items-center gap-2">
+                <ModelSelectorPill
                   onSettingsOpen={(section) => {
                     setSettingsSection(section);
                     setSettingsOpen(true);
                   }}
-                  courseMaterials={form.courseMaterials}
-                  onCourseMaterialsAdd={addCourseMaterials}
-                  onCourseMaterialRemove={removeCourseMaterial}
-                  onPdfError={setError}
-                  materialsLocked={preparingGenerate}
                 />
               </div>
+            </div>
+
+            {/* Prompt box */}
+            <div className="px-3.5 pt-3.5">
+              <div className="rounded-2xl border border-border/50 dark:border-border">
+                <textarea
+                  ref={textareaRef}
+                  placeholder={t('upload.requirementPlaceholder')}
+                  className="w-full resize-none border-0 bg-transparent px-4 py-3.5 text-[14px] leading-relaxed placeholder:text-muted-foreground/40 dark:placeholder:text-muted-foreground focus:outline-none min-h-[172px] max-h-[360px]"
+                  value={form.requirement}
+                  onChange={(e) => updateForm('requirement', e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  rows={5}
+                />
+              </div>
+            </div>
+
+            {/* ── Toolbar: attachments / media / web / agents ── */}
+            <div className="flex items-center gap-2 px-3.5 pb-3.5 pt-3">
+              <GenerationToolbar
+                webSearch={form.webSearch}
+                onWebSearchChange={(v) => updateForm('webSearch', v)}
+                onSettingsOpen={(section) => {
+                  setSettingsSection(section);
+                  setSettingsOpen(true);
+                }}
+                courseMaterials={form.courseMaterials}
+                onCourseMaterialsAdd={addCourseMaterials}
+                onCourseMaterialRemove={removeCourseMaterial}
+                onPdfError={setError}
+                materialsLocked={preparingGenerate}
+              />
 
               {/* Agents */}
               <AgentBar />
 
-              {/* Deep-thinking toggle — reads provider/model from the settings store */}
-              <DeepThinkingButton />
-
-              {/* Voice input */}
-              <SpeechButton
-                size="md"
-                onTranscription={(text) => {
-                  setForm((prev) => {
-                    const next = prev.requirement + (prev.requirement ? ' ' : '') + text;
-                    updateRequirementCache(next);
-                    return { ...prev, requirement: next };
-                  });
-                }}
-              />
-
-              {/* Send button */}
-              <button
-                onClick={handleGenerate}
-                disabled={!canGenerate || preparingGenerate}
-                className={cn(
-                  'shrink-0 h-8 rounded-full flex items-center justify-center gap-1.5 transition-all px-4',
-                  canGenerate && !preparingGenerate
-                    ? 'bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500 text-white hover:opacity-90 shadow-sm shadow-indigo-500/25 cursor-pointer'
-                    : 'bg-muted text-muted-foreground/40 cursor-not-allowed',
-                )}
-              >
-                <span className="text-xs font-medium">
-                  {preparingGenerate ? t('stage.generating') : t('toolbar.startLearning')}
-                </span>
-                {preparingGenerate ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <ArrowRight className="size-3.5" />
-                )}
-              </button>
+              {/* Right cluster: deep thinking + primary action */}
+              <div className="ml-auto flex items-center gap-2">
+                <DeepThinkingButton />
+                <button
+                  onClick={handleGenerate}
+                  disabled={!canGenerate || preparingGenerate}
+                  className={cn(
+                    'shrink-0 h-10 rounded-full flex items-center justify-center gap-2 transition-all px-6',
+                    canGenerate && !preparingGenerate
+                      ? 'bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500 text-white hover:opacity-90 shadow-sm shadow-indigo-500/25 cursor-pointer'
+                      : 'bg-muted text-muted-foreground/40 dark:text-muted-foreground cursor-not-allowed',
+                  )}
+                >
+                  <span className="text-[14px] font-semibold">
+                    {preparingGenerate ? t('stage.generating') : t('toolbar.startLearning')}
+                  </span>
+                  {preparingGenerate ? (
+                    <Loader2 className="size-[18px] animate-spin" />
+                  ) : (
+                    <ArrowRight className="size-[18px]" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
-
 
         {/* ── Error ── */}
         <AnimatePresence>
@@ -1040,7 +907,7 @@ function HomePage() {
               }}
               className="group/head flex min-w-0 items-center gap-2 text-[15px] font-semibold text-foreground/85 hover:text-foreground transition-colors cursor-pointer"
             >
-              <Clock className="size-4 shrink-0 text-muted-foreground/70" />
+              <Clock className="size-4 shrink-0 text-muted-foreground/70 dark:text-muted-foreground" />
               <span className="shrink-0">{t('classroom.recentClassrooms')}</span>
               {currentFolder && (
                 <>
@@ -1050,13 +917,13 @@ function HomePage() {
                   </span>
                 </>
               )}
-              <span className="shrink-0 text-[12px] font-normal tabular-nums text-muted-foreground/50">
+              <span className="shrink-0 text-[12px] font-normal tabular-nums text-muted-foreground/50 dark:text-muted-foreground">
                 {currentFolder ? currentFolderClassrooms.length : classrooms.length}
               </span>
               <motion.div
                 animate={{ rotate: recentOpen ? 180 : 0 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="shrink-0 text-muted-foreground/50"
+                className="shrink-0 text-muted-foreground/50 dark:text-muted-foreground"
               >
                 <ChevronDown className="size-3.5" />
               </motion.div>
@@ -1081,7 +948,7 @@ function HomePage() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.12, ease: 'easeOut' }}
-                  className="flex items-center justify-center size-7 rounded-full text-muted-foreground/50 hover:text-foreground/70 hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex items-center justify-center size-7 rounded-full text-muted-foreground/50 dark:text-muted-foreground hover:text-foreground/70 dark:hover:text-foreground hover:bg-muted/50 dark:hover:bg-muted transition-colors cursor-pointer"
                 >
                   <Search className="size-3.5" />
                 </motion.button>
@@ -1149,7 +1016,7 @@ function HomePage() {
             <button
               onClick={triggerImport}
               disabled={importing}
-              className="group/import grid grid-cols-[auto_0fr] hover:grid-cols-[auto_1fr] items-center gap-1 rounded-full px-1.5 py-0.5 text-[12px] text-muted-foreground/35 hover:text-muted-foreground/70 hover:bg-muted/50 transition-all duration-200 cursor-pointer"
+              className="group/import grid grid-cols-[auto_0fr] hover:grid-cols-[auto_1fr] items-center gap-1 rounded-full px-1.5 py-0.5 text-[12px] text-muted-foreground/35 dark:text-muted-foreground/80 hover:text-muted-foreground/70 dark:hover:text-muted-foreground hover:bg-muted/50 transition-all duration-200 cursor-pointer"
             >
               <Upload className="size-3" />
               <span className="overflow-hidden opacity-0 group-hover/import:opacity-100 transition-opacity duration-200 whitespace-nowrap">
@@ -1160,7 +1027,7 @@ function HomePage() {
               <button
                 onClick={triggerPptxFileSelect}
                 disabled={pptxImporting}
-                className="group/import-pptx grid grid-cols-[auto_0fr] hover:grid-cols-[auto_1fr] items-center gap-1 rounded-full px-1.5 py-0.5 text-[12px] text-muted-foreground/35 hover:text-muted-foreground/70 hover:bg-muted/50 transition-all duration-200 cursor-pointer"
+                className="group/import-pptx grid grid-cols-[auto_0fr] hover:grid-cols-[auto_1fr] items-center gap-1 rounded-full px-1.5 py-0.5 text-[12px] text-muted-foreground/35 dark:text-muted-foreground/80 hover:text-muted-foreground/70 dark:hover:text-muted-foreground hover:bg-muted/50 transition-all duration-200 cursor-pointer"
               >
                 <Presentation className="size-3" />
                 <span className="overflow-hidden opacity-0 group-hover/import-pptx:opacity-100 transition-opacity duration-200 whitespace-nowrap">
@@ -1187,7 +1054,7 @@ function HomePage() {
             <button
               type="button"
               onClick={() => persistRecentOpen(true)}
-              className="shrink-0 flex items-center gap-1 text-[13px] text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer"
+              className="shrink-0 flex items-center gap-1 text-[13px] text-muted-foreground/60 dark:text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               {t('classroom.viewAll')}
               <ArrowRight className="size-3.5" />
@@ -1205,7 +1072,7 @@ function HomePage() {
                 className="w-full overflow-hidden"
               >
                 {folders.length === 0 && classrooms.length === 0 ? (
-                  <div className="pt-8 pb-2 text-center text-[13px] text-muted-foreground/60">
+                  <div className="pt-8 pb-2 text-center text-[13px] text-muted-foreground/60 dark:text-muted-foreground">
                     {t('classroom.emptyLibraryHint')}
                   </div>
                 ) : !isSearching && currentFolderId && currentFolderClassrooms.length === 0 ? (
@@ -1216,7 +1083,7 @@ function HomePage() {
                     </p>
                   </div>
                 ) : isSearching && filteredClassrooms.length === 0 ? (
-                  <div className="pt-8 pb-2 text-center text-[13px] text-muted-foreground/60">
+                  <div className="pt-8 pb-2 text-center text-[13px] text-muted-foreground/60 dark:text-muted-foreground">
                     {t('classroom.searchEmpty')}
                   </div>
                 ) : (
@@ -1343,294 +1210,9 @@ function HomePage() {
       />
 
       {/* Footer — flows with content, at the very end */}
-      <div className="mt-auto pt-12 pb-4 text-center text-xs text-muted-foreground/40">
+      <div className="mt-auto pt-12 pb-4 text-center text-xs text-muted-foreground/40 dark:text-muted-foreground/80">
         OpenMAIC Open Source Project
       </div>
-    </div>
-  );
-}
-
-// ─── Greeting Bar — avatar + "Hi, Name", click to edit in-place ────
-const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
-
-function isCustomAvatar(src: string) {
-  return src.startsWith('data:');
-}
-
-function GreetingBar() {
-  const { t } = useI18n();
-  const avatar = useUserProfileStore((s) => s.avatar);
-  const nickname = useUserProfileStore((s) => s.nickname);
-  const bio = useUserProfileStore((s) => s.bio);
-  const setAvatar = useUserProfileStore((s) => s.setAvatar);
-  const setNickname = useUserProfileStore((s) => s.setNickname);
-  const setBio = useUserProfileStore((s) => s.setBio);
-
-  const [open, setOpen] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [nameDraft, setNameDraft] = useState('');
-  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
-  const nameInputRef = useRef<HTMLInputElement>(null);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const displayName = nickname || t('profile.defaultNickname');
-
-  // Click-outside to collapse
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setEditingName(false);
-        setAvatarPickerOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  const startEditName = () => {
-    setNameDraft(nickname);
-    setEditingName(true);
-    setTimeout(() => nameInputRef.current?.focus(), 50);
-  };
-
-  const commitName = () => {
-    setNickname(nameDraft.trim());
-    setEditingName(false);
-  };
-
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > MAX_AVATAR_SIZE) {
-      toast.error(t('profile.fileTooLarge'));
-      return;
-    }
-    if (!file.type.startsWith('image/')) {
-      toast.error(t('profile.invalidFileType'));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new window.Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 128;
-        canvas.height = 128;
-        const ctx = canvas.getContext('2d')!;
-        const scale = Math.max(128 / img.width, 128 / img.height);
-        const w = img.width * scale;
-        const h = img.height * scale;
-        ctx.drawImage(img, (128 - w) / 2, (128 - h) / 2, w, h);
-        setAvatar(canvas.toDataURL('image/jpeg', 0.85));
-      };
-      img.src = reader.result as string;
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
-
-  return (
-    <div ref={containerRef} className="relative pl-4 pr-2 pt-3.5 pb-1 w-auto">
-      <input
-        ref={avatarInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleAvatarUpload}
-      />
-
-      {/* ── Collapsed pill (always in flow) ── */}
-      {!open && (
-        <div
-          className="flex items-center gap-2.5 cursor-pointer transition-all duration-200 group rounded-full px-2.5 py-1.5 border border-border/50 text-muted-foreground/70 hover:text-foreground hover:bg-muted/60 active:scale-[0.97]"
-          onClick={() => setOpen(true)}
-        >
-          <div className="shrink-0 relative">
-            <div className="size-8 rounded-full overflow-hidden ring-[1.5px] ring-border/30 group-hover:ring-violet-400/60 dark:group-hover:ring-violet-400/40 transition-all duration-300">
-              <img src={avatar} alt="" className="size-full object-cover" />
-            </div>
-            <div className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-white dark:bg-slate-800 border border-border/40 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity">
-              <Pencil className="size-[7px] text-muted-foreground/70" />
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="leading-none select-none flex items-center gap-1">
-                  <span className="text-[13px] font-semibold text-foreground/85 group-hover:text-foreground transition-colors">
-                    {t('home.greetingWithName', { name: displayName })}
-                  </span>
-                  <ChevronDown className="size-3 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors shrink-0" />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={4}>
-                {t('profile.editTooltip')}
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </div>
-      )}
-
-      {/* ── Expanded panel (absolute, floating) ── */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -4, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.97 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute left-4 top-3.5 z-50 w-64"
-          >
-            <div className="rounded-2xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06] shadow-[0_1px_8px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_8px_-2px_rgba(0,0,0,0.3)] px-2.5 py-2">
-              {/* ── Row: avatar + name ── */}
-              <div
-                className="flex items-center gap-2.5 cursor-pointer transition-all duration-200"
-                onClick={() => {
-                  setOpen(false);
-                  setEditingName(false);
-                  setAvatarPickerOpen(false);
-                }}
-              >
-                {/* Avatar */}
-                <div
-                  className="shrink-0 relative cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setAvatarPickerOpen(!avatarPickerOpen);
-                  }}
-                >
-                  <div className="size-8 rounded-full overflow-hidden ring-[1.5px] ring-violet-300/70 dark:ring-violet-500/40 transition-all duration-300">
-                    <img src={avatar} alt="" className="size-full object-cover" />
-                  </div>
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full bg-white dark:bg-slate-800 border border-border/60 flex items-center justify-center"
-                  >
-                    <ChevronDown
-                      className={cn(
-                        'size-2 text-muted-foreground/70 transition-transform duration-200',
-                        avatarPickerOpen && 'rotate-180',
-                      )}
-                    />
-                  </motion.div>
-                </div>
-
-                {/* Text */}
-                <div className="flex-1 min-w-0">
-                  {editingName ? (
-                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        ref={nameInputRef}
-                        value={nameDraft}
-                        onChange={(e) => setNameDraft(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') commitName();
-                          if (e.key === 'Escape') {
-                            setEditingName(false);
-                          }
-                        }}
-                        onBlur={commitName}
-                        maxLength={20}
-                        placeholder={t('profile.defaultNickname')}
-                        className="flex-1 min-w-0 h-6 bg-transparent border-b border-border/80 text-[13px] font-semibold text-foreground outline-none placeholder:text-muted-foreground/40"
-                      />
-                      <button
-                        onClick={commitName}
-                        className="shrink-0 size-5 rounded flex items-center justify-center text-violet-500 hover:bg-violet-100 dark:hover:bg-violet-900/30"
-                      >
-                        <Check className="size-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <span
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startEditName();
-                      }}
-                      className="group/name inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <span className="text-[13px] font-semibold text-foreground/85 group-hover/name:text-foreground transition-colors">
-                        {displayName}
-                      </span>
-                      <Pencil className="size-2.5 text-muted-foreground/30 opacity-0 group-hover/name:opacity-100 transition-opacity" />
-                    </span>
-                  )}
-                </div>
-
-                {/* Collapse arrow */}
-                <motion.div
-                  initial={{ opacity: 0, y: -2 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="shrink-0 size-6 rounded-full flex items-center justify-center hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
-                >
-                  <ChevronUp className="size-3.5 text-muted-foreground/50" />
-                </motion.div>
-              </div>
-
-              {/* ── Expandable content ── */}
-              <div className="pt-2" onClick={(e) => e.stopPropagation()}>
-                {/* Avatar picker */}
-                <AnimatePresence>
-                  {avatarPickerOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.15, ease: 'easeInOut' }}
-                      className="overflow-hidden"
-                    >
-                      <div className="p-1 pb-2.5 flex items-center gap-1.5 flex-wrap">
-                        {AVATAR_OPTIONS.map((url) => (
-                          <button
-                            key={url}
-                            onClick={() => setAvatar(url)}
-                            className={cn(
-                              'size-7 rounded-full overflow-hidden bg-gray-50 dark:bg-gray-800 cursor-pointer transition-all duration-150',
-                              'hover:scale-110 active:scale-95',
-                              avatar === url
-                                ? 'ring-2 ring-violet-400 dark:ring-violet-500 ring-offset-0'
-                                : 'hover:ring-1 hover:ring-muted-foreground/30',
-                            )}
-                          >
-                            <img src={url} alt="" className="size-full" />
-                          </button>
-                        ))}
-                        <label
-                          className={cn(
-                            'size-7 rounded-full flex items-center justify-center cursor-pointer transition-all duration-150 border border-dashed',
-                            'hover:scale-110 active:scale-95',
-                            isCustomAvatar(avatar)
-                              ? 'ring-2 ring-violet-400 dark:ring-violet-500 ring-offset-0 border-violet-300 dark:border-violet-600 bg-violet-50 dark:bg-violet-900/30'
-                              : 'border-muted-foreground/30 text-muted-foreground/50 hover:border-muted-foreground/50',
-                          )}
-                          onClick={() => avatarInputRef.current?.click()}
-                          title={t('profile.uploadAvatar')}
-                        >
-                          <ImagePlus className="size-3" />
-                        </label>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Bio */}
-                <UITextarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder={t('profile.bioPlaceholder')}
-                  maxLength={200}
-                  rows={2}
-                  className="resize-none border-border/40 bg-transparent min-h-[72px] !text-[13px] !leading-relaxed placeholder:!text-[11px] placeholder:!leading-relaxed focus-visible:ring-1 focus-visible:ring-border/60"
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

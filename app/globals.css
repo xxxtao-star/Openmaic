@@ -112,12 +112,18 @@
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
+  /* Call sites routinely composite this token at 40-70% alpha. On the near-black
+     dark background those alphas collapse the contrast (0.708 at /70 lands
+     around 4:1, at /40 around 2:1 — unreadable), so the base tone is lifted
+     until the common alphas stay legible. Light mode is untouched. */
+  --muted-foreground: oklch(0.8 0 0);
   --accent: oklch(0.371 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  /* Same reasoning as --muted-foreground: `border-border/50` is common, and at
+     10% base that resolves to a 5% white hairline that never renders. */
+  --border: oklch(1 0 0 / 14%);
+  --input: oklch(1 0 0 / 20%);
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
@@ -130,7 +136,9 @@
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  /* Kept in step with --border above; the sidebar seams were the same
+     invisible hairline. */
+  --sidebar-border: oklch(1 0 0 / 14%);
   --sidebar-ring: oklch(0.556 0 0);
 }
 

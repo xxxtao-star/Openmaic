@@ -2,15 +2,9 @@
 
 import { useState, useCallback, useMemo, Fragment, useEffect } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import {
-  Image as ImageIcon,
-  Video,
-  Volume2,
-  Mic,
-  SlidersHorizontal,
-  ChevronRight,
-} from 'lucide-react';
+import { Image as ImageIcon, Video, Volume2, Mic, ChevronRight } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { iconControlActive, iconControlMuted } from '@/components/generation/control-styles';
 import {
   Select,
   SelectContent,
@@ -238,18 +232,10 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all cursor-pointer select-none whitespace-nowrap border',
-            enabledCount > 0
-              ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-200/60 dark:border-violet-700/50'
-              : 'text-muted-foreground/70 hover:text-foreground hover:bg-muted/60 border-border/50',
-          )}
+          aria-label={t('toolbar.mediaSettings')}
+          className={enabledCount > 0 ? iconControlActive : iconControlMuted}
         >
-          <SlidersHorizontal className="size-3.5" />
-          {imageGenerationEnabled && <ImageIcon className="size-3.5" />}
-          {videoGenerationEnabled && <Video className="size-3.5" />}
-          {ttsEnabled && <Volume2 className="size-3.5" />}
-          {asrEnabled && <Mic className="size-3.5" />}
+          <ImageIcon className="size-[18px]" />
         </button>
       </PopoverTrigger>
 
@@ -353,13 +339,13 @@ export function MediaPopover({ onSettingsOpen }: MediaPopoverProps) {
         </div>
 
         {/* ── Footer ── */}
-        <div className="border-t border-border/40">
+        <div className="border-t border-border/40 dark:border-border">
           <button
             onClick={() => {
               setOpen(false);
               onSettingsOpen(activeTab);
             }}
-            className="w-full flex items-center justify-between px-3.5 py-2.5 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            className="w-full flex items-center justify-between px-3.5 py-2.5 text-[11px] text-muted-foreground/60 dark:text-muted-foreground hover:text-muted-foreground transition-colors"
           >
             <span>{t('toolbar.advancedSettings')}</span>
             <ChevronRight className="size-3" />
@@ -390,7 +376,9 @@ function TabPanel({
         <Icon
           className={cn(
             'size-4 shrink-0 transition-colors',
-            enabled ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground/50',
+            enabled
+              ? 'text-violet-600 dark:text-violet-400'
+              : 'text-muted-foreground/50 dark:text-muted-foreground',
           )}
         />
         <span
@@ -449,13 +437,13 @@ function GroupedSelect({
         onSelect(v.slice(0, sep), v.slice(sep + 2));
       }}
     >
-      <SelectTrigger className="h-8 w-full rounded-lg border-border/40 bg-background/80 hover:bg-muted/40 shadow-none text-xs focus:ring-1 focus:ring-ring/30 px-2.5">
+      <SelectTrigger className="h-8 w-full rounded-lg border-border/40 dark:border-border bg-background/80 hover:bg-muted/40 shadow-none text-xs focus:ring-1 focus:ring-ring/30 px-2.5">
         <span className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
           {selectedGroup?.groupIcon && (
             <img src={selectedGroup.groupIcon} alt="" className="size-4 rounded-sm shrink-0" />
           )}
           <span className="font-medium truncate">{selectedGroup?.groupName}</span>
-          <span className="text-muted-foreground/40">/</span>
+          <span className="text-muted-foreground/40 dark:text-muted-foreground/80">/</span>
           <span className="text-muted-foreground truncate">
             <SelectValue />
           </span>
