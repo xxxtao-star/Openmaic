@@ -27,57 +27,54 @@ Recommended when the user wants the smallest amount of configuration.
 Set:
 
 ```env
-ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+DEFAULT_MODEL=openai:qwen3.7-plus
 ```
 
 Why:
 
+- The `openai` slot is a generic OpenAI-compatible channel that ships the built-in
+  domestic catalogue (Qwen, DeepSeek, GLM, Kimi), so one key covers the widest choice
+  of models.
 - OpenMAIC has **no hardcoded model fallback**. If `DEFAULT_MODEL` is unset (and no client model is sent), generation **fails with an error** rather than silently picking a default. So the user must always set `DEFAULT_MODEL` explicitly to match whichever provider key they configured.
-- With only `ANTHROPIC_API_KEY` set, the user must also set `DEFAULT_MODEL=anthropic:<model>` — otherwise generation cannot start.
+- With only `OPENAI_API_KEY` set, the user must also set `DEFAULT_MODEL=openai:<model>` — otherwise generation cannot start.
 
-### 2. Better Speed / Cost Balance
+### 2. Direct Vendor Endpoint
 
-Recommended when the user is willing to set one extra variable.
+Recommended when the user prefers to call a vendor's own endpoint instead of the shared channel, or already has one of these keys.
 
 Set:
 
 ```env
-GOOGLE_API_KEY=...
-DEFAULT_MODEL=google:gemini-2.5-flash
+DEEPSEEK_API_KEY=...
+DEFAULT_MODEL=deepseek:deepseek-v4-pro
+```
+
+```env
+QWEN_API_KEY=...
+DEFAULT_MODEL=qwen:qwen3.7-plus
 ```
 
 Why:
 
-- Good quality-to-speed balance
-- Matches the repo's current recommendation direction better than the default fallback
-- The `google:` prefix is important. Without a provider prefix, model parsing defaults to OpenAI.
+- The vendor's own endpoint and quota, with the same model family
+- The `deepseek:` / `qwen:` prefix is important. Without a provider prefix, model parsing defaults to OpenAI.
+- Keys never leave the server: they live in `.env.local` or `server-providers.yml`, both read server-side only.
 
 ### 3. Existing Provider Reuse
 
-Use when the user already has OpenAI or another supported provider configured and wants to stick with it.
-
-Examples:
-
-```env
-OPENAI_API_KEY=sk-...
-DEFAULT_MODEL=openai:gpt-5.4-mini
-```
-
-```env
-DEEPSEEK_API_KEY=...
-DEFAULT_MODEL=deepseek:deepseek-chat
-```
+Use when the user already has a provider key configured and wants to stick with it. The same `provider:model-id` form applies to every built-in slot — `glm:`, `kimi:`, `minimax:`, `grok:`, `doubao:`, `siliconflow:`, `openrouter:`, `tencent-hunyuan:`, `xiaomi:`, `ollama:`, `lemonade:`.
 
 ## Model String Rule
 
 When recommending or showing `DEFAULT_MODEL`, always include the provider prefix:
 
-- `google:gemini-2.5-flash`
-- `anthropic:claude-sonnet-4`
-- `openai:gpt-5.4-mini`
-- `deepseek:deepseek-chat`
+- `openai:qwen3.7-plus`
+- `deepseek:deepseek-v4-pro`
+- `glm:glm-5.3`
+- `kimi:kimi-k3`
 
-Do not recommend bare model IDs such as `gemini-2.5-flash` by themselves, because OpenMAIC will otherwise parse them as OpenAI models.
+Do not recommend bare model IDs such as `qwen3.7-plus` by themselves, because OpenMAIC will otherwise parse them as OpenAI models.
 
 The exact model IDs above are examples. Model names change as providers release new versions — if a recommended ID is rejected, direct the user to check the provider's official docs for the current model name and keep the `provider:` prefix.
 
@@ -97,11 +94,11 @@ Alternative: `server-providers.yml`
 
 ```yaml
 providers:
-  anthropic:
-    apiKey: sk-ant-...
+  deepseek:
+    apiKey: sk-...
 
-  google:
-    apiKey: ...
+  qwen:
+    apiKey: sk-...
 
   openai:
     apiKey: sk-...
@@ -110,7 +107,7 @@ providers:
 If using a non-default provider for classroom generation, also set the model selection explicitly:
 
 ```env
-DEFAULT_MODEL=google:gemini-2.5-flash
+DEFAULT_MODEL=deepseek:deepseek-v4-pro
 ```
 
 ## Recommended Prompts To The User
@@ -118,7 +115,7 @@ DEFAULT_MODEL=google:gemini-2.5-flash
 Example phrasing the agent can adapt:
 
 - "I recommend configuring OpenMAIC through `.env.local` first. Please edit that file locally and tell me when you're done."
-- "For the simplest setup, I recommend Anthropic. For better speed/cost balance, I recommend Google plus a `DEFAULT_MODEL` like `google:gemini-2.5-flash`. Which path do you want?"
+- "For the simplest setup, I recommend the built-in `openai` channel plus a `DEFAULT_MODEL` like `openai:qwen3.7-plus` — that one key reaches the whole built-in domestic catalogue. If you'd rather call a vendor's own endpoint, `deepseek:` or `qwen:` works the same way. Which path do you want?"
 
 The "do not ask for the key in chat / do not offer to write it" rules are covered in [Interaction Flow](#interaction-flow) above — do not open by requesting the key.
 

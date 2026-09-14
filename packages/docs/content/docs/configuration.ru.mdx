@@ -19,27 +19,26 @@ OPENAI_MODELS=                  # опциональный белый списо
 
 Поддерживаемые префиксы провайдеров:
 
-| Префикс             | Провайдер                              |
-| ------------------- | ------------------------------------- |
-| `OPENAI_`           | OpenAI                                |
-| `AZURE_OPENAI_`     | Azure OpenAI                          |
-| `ANTHROPIC_`        | Anthropic                            |
-| `GOOGLE_`           | Google Gemini                        |
-| `DEEPSEEK_`         | DeepSeek                             |
-| `QWEN_`             | Alibaba Qwen                        |
-| `KIMI_`             | Moonshot Kimi                      |
-| `MINIMAX_`          | MiniMax (по умолчанию Anthropic-совместимый endpoint) |
-| `GLM_`              | Zhipu GLM                          |
-| `SILICONFLOW_`      | SiliconFlow                        |
-| `DOUBAO_`           | Doubao (ByteDance)                 |
-| `OPENROUTER_`       | OpenRouter                        |
-| `GROK_`             | xAI Grok                          |
-| `TENCENT_`          | Tencent Hunyuan                   |
-| `TENCENT_HUNYUAN_`  | Tencent Hunyuan (синоним)          |
-| `XIAOMI_`           | Xiaomi MiMo                      |
-| `MIMO_`             | Xiaomi MiMo (синоним)              |
-| `OLLAMA_`           | Ollama (локально)                 |
-| `LEMONADE_`         | Lemonade (локально)               |
+| Префикс              | Провайдер                                                             |
+| -------------------- | --------------------------------------------------------------------- |
+| `OPENAI_`            | OpenAI-совместимый канал (встроенный каталог отечественных моделей)   |
+| `AZURE_OPENAI_`      | Azure OpenAI                                                          |
+| `ATLASCLOUD_`        | AtlasCloud                                                            |
+| `DEEPSEEK_`          | DeepSeek                                                              |
+| `QWEN_`              | Alibaba Qwen                                                          |
+| `KIMI_`              | Moonshot Kimi                                                         |
+| `MINIMAX_`           | MiniMax (по умолчанию Anthropic-совместимый эндпоинт)                 |
+| `GLM_`               | Zhipu GLM                                                             |
+| `SILICONFLOW_`       | SiliconFlow                                                           |
+| `DOUBAO_`            | Doubao (ByteDance)                                                    |
+| `OPENROUTER_`        | OpenRouter                                                            |
+| `GROK_`              | xAI Grok                                                              |
+| `TENCENT_`           | Tencent Hunyuan                                                       |
+| `TENCENT_HUNYUAN_`   | Tencent Hunyuan (синоним)                                             |
+| `XIAOMI_`            | Xiaomi MiMo                                                           |
+| `MIMO_`              | Xiaomi MiMo (синоним)                                                 |
+| `OLLAMA_`            | Ollama (локально)                                                     |
+| `LEMONADE_`          | Lemonade (локально)                                                   |
 
 Azure OpenAI использует deployment name в качестве ID модели:
 
@@ -203,7 +202,7 @@ ACCESS_CODE=your-secret-code
 Если серверный API не получает модель от клиента, используйте `DEFAULT_MODEL` для указания модели по умолчанию. Формат: `provider:model-id`, например:
 
 ```bash
-DEFAULT_MODEL=openai:gpt-5.5
+DEFAULT_MODEL=openai:qwen3.7-plus
 ```
 
 Можно использовать `MODEL_ROUTES` для назначения моделей на разные этапы генерации; этапы без настройки используют клиентскую модель или `DEFAULT_MODEL`. Это JSON-объект, где ключ — этап генерации, значение — строка модели или объект с полями `model` и `thinking`. Полный список этапов и примеры — в [`.env.example`](https://github.com/THU-MAIC/OpenMAIC/blob/main/.env.example).
@@ -264,9 +263,9 @@ providers:
     apiKey: sk-...
     baseUrl: https://api.openai.com/v1
     models:
-      - gpt-5.5
-  anthropic:
-    apiKey: sk-ant-...
+      - qwen3.7-plus
+  deepseek:
+    apiKey: sk-...
 
 tts:
   doubao-tts:

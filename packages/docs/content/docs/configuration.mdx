@@ -19,27 +19,31 @@ OPENAI_MODELS=                  # optional model allowlist (comma-separated)
 
 Supported provider prefixes:
 
-| Prefix             | Provider                                      |
-| ------------------ | --------------------------------------------- |
-| `OPENAI_`          | OpenAI                                        |
-| `AZURE_OPENAI_`    | Azure OpenAI                                  |
-| `ANTHROPIC_`       | Anthropic                                     |
-| `GOOGLE_`          | Google Gemini                                 |
-| `DEEPSEEK_`        | DeepSeek                                      |
-| `QWEN_`            | Alibaba Qwen                                  |
-| `KIMI_`            | Moonshot Kimi                                 |
-| `MINIMAX_`         | MiniMax (Anthropic-compatible endpoint by default) |
-| `GLM_`             | Zhipu GLM                                     |
-| `SILICONFLOW_`     | SiliconFlow                                   |
-| `DOUBAO_`          | Doubao (ByteDance)                            |
-| `OPENROUTER_`      | OpenRouter                                    |
-| `GROK_`            | xAI Grok                                      |
-| `TENCENT_`         | Tencent Hunyuan                               |
-| `TENCENT_HUNYUAN_` | Tencent Hunyuan (alias)                       |
-| `XIAOMI_`          | Xiaomi MiMo                                   |
-| `MIMO_`            | Xiaomi MiMo (alias)                           |
-| `OLLAMA_`          | Ollama (local)                                |
-| `LEMONADE_`        | Lemonade (local)                              |
+| Prefix               | Provider                                                            |
+| -------------------- | ------------------------------------------------------------------- |
+| `OPENAI_`            | OpenAI-compatible channel (ships the built-in domestic catalogue)   |
+| `AZURE_OPENAI_`      | Azure OpenAI                                                        |
+| `ATLASCLOUD_`        | AtlasCloud                                                          |
+| `DEEPSEEK_`          | DeepSeek                                                            |
+| `QWEN_`              | Alibaba Qwen                                                        |
+| `KIMI_`              | Moonshot Kimi                                                       |
+| `MINIMAX_`           | MiniMax (Anthropic-compatible endpoint by default)                  |
+| `GLM_`               | Zhipu GLM                                                           |
+| `SILICONFLOW_`       | SiliconFlow                                                         |
+| `DOUBAO_`            | Doubao (ByteDance)                                                  |
+| `OPENROUTER_`        | OpenRouter                                                          |
+| `GROK_`              | xAI Grok                                                            |
+| `TENCENT_`           | Tencent Hunyuan                                                     |
+| `TENCENT_HUNYUAN_`   | Tencent Hunyuan (alias)                                             |
+| `XIAOMI_`            | Xiaomi MiMo                                                         |
+| `MIMO_`              | Xiaomi MiMo (alias)                                                 |
+| `OLLAMA_`            | Ollama (local)                                                      |
+| `LEMONADE_`          | Lemonade (local)                                                    |
+
+The built-in `OPENAI_` prefix is a generic OpenAI-compatible channel: by default it
+serves the domestic model catalogue (Qwen, DeepSeek, GLM, Kimi). Point
+`OPENAI_BASE_URL` at a relay or gateway to serve that catalogue from there, or use
+`OPENAI_MODELS` to narrow it.
 
 Azure OpenAI uses the deployment name as the model ID:
 
@@ -203,7 +207,7 @@ Visitors are prompted only once; the password is stored in an HTTP-only cookie. 
 When the server API receives no client model, set the default with `DEFAULT_MODEL`. Use the format `provider:model-id`, for example:
 
 ```bash
-DEFAULT_MODEL=openai:gpt-5.5
+DEFAULT_MODEL=openai:qwen3.7-plus
 ```
 
 Use `MODEL_ROUTES` to choose models for individual generation stages. Unconfigured stages continue to resolve through the client model and `DEFAULT_MODEL`. Its value is a JSON object whose keys are generation stages and whose values can be model strings or objects containing `model` and `thinking`. See [`.env.example`](https://github.com/THU-MAIC/OpenMAIC/blob/main/.env.example) for the complete stage list and examples.
@@ -264,9 +268,9 @@ providers:
     apiKey: sk-...
     baseUrl: https://api.openai.com/v1
     models:
-      - gpt-5.5
-  anthropic:
-    apiKey: sk-ant-...
+      - qwen3.7-plus
+  deepseek:
+    apiKey: sk-...
 
 tts:
   doubao-tts:

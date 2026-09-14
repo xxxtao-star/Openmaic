@@ -3,16 +3,11 @@
  *
  * Supports multiple AI providers through Vercel AI SDK:
  * - OpenAI (native)
- * - Anthropic Claude (native)
- * - Amazon Bedrock (native)
- * - Google Gemini (native)
  * - MiniMax (Anthropic-compatible, recommended by official)
  * - OpenAI-compatible providers (DeepSeek, Qwen, Kimi, GLM, SiliconFlow, Doubao, Tencent, Xiaomi, Lemonade, etc.)
  *
  * Sources:
  * - https://platform.openai.com/docs/models
- * - https://platform.claude.com/docs/en/about-claude/models/overview
- * - https://ai.google.dev/gemini-api/docs/models
  * - https://api-docs.deepseek.com/quick_start/pricing
  * - https://platform.moonshot.cn/docs/pricing/chat
  * - https://platform.minimaxi.com/docs/guides/text-generation
@@ -29,8 +24,6 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAzure } from '@ai-sdk/azure';
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { wrapLanguageModel, extractReasoningMiddleware } from 'ai';
 import {
   createKimiReasoningPreservationMiddleware,
@@ -75,138 +68,303 @@ export const MONO_LOGO_PROVIDERS: ReadonlySet<string> = new Set(['openai', 'open
 export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
   openai: {
     id: 'openai',
-    name: 'OpenAI',
+    name: '芯火AI',
     type: 'openai',
     defaultBaseUrl: 'https://api.openai.com/v1',
+    baseUrlPlaceholder: 'https://api.example.com/v1',
     requiresApiKey: true,
     icon: '/logos/openai.svg',
     models: [
+      // ---------------------------------------------------------------------
+      // Domestic (国模) catalog served through the same channel.
+      //
+      // These entries mirror the per-vendor blocks further down so one channel
+      // exposes Qwen, DeepSeek, GLM and Kimi side by side. Thinking control is
+      // NOT set here: `PROVIDERS.openai` is a shared slot, so the capability
+      // for each id lives in THINKING_CAPABILITIES (lib/ai/model-metadata.ts)
+      // and is applied by applyModelMetadata() below.
+      // ---------------------------------------------------------------------
+
+      // Qwen (DashScope OpenAI-compatible mode): enable_thinking + thinking_budget
       {
-        id: 'gpt-5.6',
-        name: 'GPT-5.6 Sol',
-        contextWindow: 1050000,
-        outputWindow: 128000,
+        id: 'qwen3.7-plus',
+        name: 'Qwen3.7 Plus',
+        contextWindow: 1000000,
+        outputWindow: 64000,
         capabilities: {
           streaming: true,
           tools: true,
           vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
         },
       },
       {
-        id: 'gpt-5.6-terra',
-        name: 'GPT-5.6 Terra',
-        contextWindow: 1050000,
-        outputWindow: 128000,
+        id: 'qwen3.7-max',
+        name: 'Qwen3.7 Max',
+        contextWindow: 1000000,
+        outputWindow: 64000,
         capabilities: {
           streaming: true,
           tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
+          vision: false,
         },
       },
       {
-        id: 'gpt-5.6-luna',
-        name: 'GPT-5.6 Luna',
-        contextWindow: 1050000,
-        outputWindow: 128000,
+        id: 'qwen3.6-plus',
+        name: 'Qwen3.6 Plus',
+        contextWindow: 1000000,
+        outputWindow: 64000,
         capabilities: {
           streaming: true,
           tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
+          vision: false,
         },
       },
       {
-        id: 'gpt-5.5',
-        name: 'GPT-5.5',
-        contextWindow: 1050000,
-        outputWindow: 128000,
+        id: 'qwen3.6-flash',
+        name: 'Qwen3.6 Flash',
+        contextWindow: 1000000,
+        outputWindow: 64000,
         capabilities: {
           streaming: true,
           tools: true,
-          vision: true,
-          thinking: {
-            toggleable: false,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
+          vision: false,
         },
       },
       {
-        id: 'gpt-5.4-pro',
-        name: 'GPT-5.4 Pro',
-        contextWindow: 1050000,
-        outputWindow: 128000,
+        id: 'qwen3.6-max-preview',
+        name: 'Qwen3.6 Max Preview',
+        contextWindow: 256000,
+        outputWindow: 64000,
         capabilities: {
           streaming: true,
           tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
+          vision: false,
         },
       },
       {
-        id: 'gpt-5.4',
-        name: 'GPT-5.4',
-        contextWindow: 1050000,
-        outputWindow: 128000,
+        id: 'qwen3-max',
+        name: 'Qwen3 Max',
+        contextWindow: 262144,
+        outputWindow: 65536,
         capabilities: {
           streaming: true,
           tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: false,
-          },
+          vision: false,
         },
       },
       {
-        id: 'gpt-5.4-mini',
-        name: 'GPT-5.4 Mini',
-        contextWindow: 400000,
-        outputWindow: 128000,
+        id: 'qwen3-vl-plus',
+        name: 'Qwen3 VL Plus',
+        contextWindow: 262144,
+        outputWindow: 32768,
         capabilities: {
           streaming: true,
           tools: true,
           vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: false,
-          },
+        },
+      },
+
+      // DeepSeek: thinking { type } + reasoning_effort
+      {
+        id: 'deepseek-v4-pro',
+        name: 'DeepSeek V4 Pro',
+        contextWindow: 1048576,
+        outputWindow: 393216,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: false,
         },
       },
       {
-        id: 'gpt-5.4-nano',
-        name: 'GPT-5.4 Nano',
-        contextWindow: 400000,
+        id: 'deepseek-v4-flash',
+        name: 'DeepSeek V4 Flash',
+        contextWindow: 1048576,
+        outputWindow: 393216,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: false,
+        },
+      },
+      {
+        id: 'deepseek-v4-flash-vision-exp',
+        name: 'DeepSeek V4 Flash Vision (Exp)',
+        contextWindow: 1048576,
+        outputWindow: 393216,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+        },
+      },
+
+      // GLM (BigModel): thinking { type } (+ reasoning_effort where supported)
+      {
+        id: 'glm-5.3',
+        name: 'GLM-5.3',
+        contextWindow: 1000000,
+        outputWindow: 128000,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: false,
+        },
+      },
+      {
+        id: 'glm-5.3-flash',
+        name: 'GLM-5.3-Flash',
+        contextWindow: 1000000,
         outputWindow: 128000,
         capabilities: {
           streaming: true,
           tools: true,
           vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: false,
-          },
+        },
+      },
+      {
+        id: 'glm-5.2',
+        name: 'GLM-5.2',
+        contextWindow: 1000000,
+        outputWindow: 128000,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: false,
+        },
+      },
+      {
+        id: 'glm-5.1',
+        name: 'GLM-5.1',
+        contextWindow: 200000,
+        outputWindow: 128000,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: false,
+        },
+      },
+      {
+        id: 'glm-5v-turbo',
+        name: 'GLM-5V-Turbo',
+        contextWindow: 200000,
+        outputWindow: 128000,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+        },
+      },
+      {
+        id: 'glm-5',
+        name: 'GLM-5',
+        contextWindow: 200000,
+        outputWindow: 128000,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: false,
+        },
+      },
+      {
+        id: 'glm-4.7',
+        name: 'GLM-4.7',
+        contextWindow: 200000,
+        outputWindow: 128000,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: false,
+        },
+      },
+      {
+        id: 'glm-4.6',
+        name: 'GLM-4.6',
+        contextWindow: 200000,
+        outputWindow: 128000,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: false,
+        },
+      },
+      {
+        id: 'glm-4.6v',
+        name: 'GLM-4.6V',
+        contextWindow: 128000,
+        outputWindow: 32000,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+        },
+      },
+
+      // Kimi (Moonshot): thinking { type } only; K3 adds reasoning_effort
+      {
+        id: 'kimi-k3',
+        name: 'Kimi K3',
+        contextWindow: 1048576,
+        outputWindow: 131072,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+        },
+      },
+      {
+        id: 'kimi-k2.7-code',
+        name: 'Kimi K2.7 Code',
+        contextWindow: 256000,
+        outputWindow: 32768,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+        },
+      },
+      {
+        id: 'kimi-k2.7-code-highspeed',
+        name: 'Kimi K2.7 Code HighSpeed',
+        contextWindow: 256000,
+        outputWindow: 32768,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+        },
+      },
+      {
+        id: 'kimi-k2.6',
+        name: 'Kimi K2.6',
+        contextWindow: 256000,
+        outputWindow: 8192,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+        },
+      },
+      {
+        id: 'kimi-k2.5',
+        name: 'Kimi K2.5',
+        contextWindow: 256000,
+        outputWindow: 8192,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: true,
+        },
+      },
+      {
+        id: 'kimi-k2-thinking',
+        name: 'Kimi K2 Thinking',
+        contextWindow: 256000,
+        outputWindow: 8192,
+        capabilities: {
+          streaming: true,
+          tools: true,
+          vision: false,
         },
       },
     ],
@@ -252,365 +410,6 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
           vision: false,
           thinking: {
             toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
-        },
-      },
-    ],
-  },
-
-  anthropic: {
-    id: 'anthropic',
-    name: 'Claude',
-    type: 'anthropic',
-    requiresApiKey: true,
-    defaultBaseUrl: 'https://api.anthropic.com/v1',
-    icon: '/logos/claude.svg',
-    models: [
-      {
-        id: 'claude-opus-5',
-        name: 'Claude Opus 5',
-        contextWindow: 1000000,
-        outputWindow: 128000,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
-        },
-      },
-      {
-        id: 'claude-sonnet-5',
-        name: 'Claude Sonnet 5',
-        contextWindow: 1000000,
-        outputWindow: 128000,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
-        },
-      },
-      {
-        id: 'claude-fable-5',
-        name: 'Claude Fable 5',
-        contextWindow: 1000000,
-        outputWindow: 128000,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: false,
-            budgetAdjustable: false,
-            defaultEnabled: true,
-          },
-        },
-      },
-      {
-        id: 'claude-opus-4-8',
-        name: 'Claude Opus 4.8',
-        contextWindow: 1000000,
-        outputWindow: 128000,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: false,
-          },
-        },
-      },
-      {
-        id: 'claude-opus-4-7',
-        name: 'Claude Opus 4.7',
-        contextWindow: 1000000,
-        outputWindow: 128000,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: false,
-          },
-        },
-      },
-      {
-        id: 'claude-opus-4-6',
-        name: 'Claude Opus 4.6',
-        contextWindow: 200000,
-        outputWindow: 128000,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: false,
-          },
-        },
-      },
-      {
-        id: 'claude-sonnet-4-6',
-        name: 'Claude Sonnet 4.6',
-        contextWindow: 200000,
-        outputWindow: 128000,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: false,
-          },
-        },
-      },
-      {
-        id: 'claude-sonnet-4-5',
-        name: 'Claude Sonnet 4.5',
-        contextWindow: 200000,
-        outputWindow: 64000,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: false,
-          },
-        },
-      },
-      {
-        id: 'claude-haiku-4-5',
-        name: 'Claude Haiku 4.5',
-        contextWindow: 200000,
-        outputWindow: 64000,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: false,
-          },
-        },
-      },
-    ],
-  },
-
-  bedrock: {
-    id: 'bedrock',
-    name: 'Amazon Bedrock',
-    type: 'bedrock',
-    requiresApiKey: false,
-    icon: '/logos/bedrock.svg',
-    models: [
-      {
-        id: 'us.anthropic.claude-sonnet-5',
-        name: 'Claude Sonnet 5 (Bedrock)',
-        contextWindow: 1000000,
-        outputWindow: 128000,
-        capabilities: { streaming: true, tools: true, vision: true },
-      },
-      {
-        id: 'us.anthropic.claude-opus-4-8',
-        name: 'Claude Opus 4.8 (Bedrock)',
-        contextWindow: 1000000,
-        outputWindow: 128000,
-        capabilities: { streaming: true, tools: true, vision: true },
-      },
-      {
-        id: 'us.anthropic.claude-opus-4-7',
-        name: 'Claude Opus 4.7 (Bedrock)',
-        contextWindow: 1000000,
-        outputWindow: 128000,
-        capabilities: { streaming: true, tools: true, vision: true },
-      },
-      {
-        id: 'us.anthropic.claude-sonnet-4-6',
-        name: 'Claude Sonnet 4.6 (Bedrock)',
-        contextWindow: 1000000,
-        outputWindow: 64000,
-        capabilities: { streaming: true, tools: true, vision: true },
-      },
-      {
-        id: 'us.amazon.nova-pro-v1:0',
-        name: 'Amazon Nova Pro',
-        contextWindow: 300000,
-        outputWindow: 10000,
-        capabilities: { streaming: true, tools: true, vision: true },
-      },
-      {
-        id: 'us.amazon.nova-lite-v1:0',
-        name: 'Amazon Nova Lite',
-        contextWindow: 300000,
-        outputWindow: 10000,
-        capabilities: { streaming: true, tools: true, vision: true },
-      },
-      {
-        id: 'us.amazon.nova-micro-v1:0',
-        name: 'Amazon Nova Micro',
-        contextWindow: 128000,
-        outputWindow: 10000,
-        capabilities: { streaming: true, tools: true, vision: false },
-      },
-      {
-        id: 'us.meta.llama3-3-70b-instruct-v1:0',
-        name: 'Llama 3.3 70B Instruct (Bedrock)',
-        contextWindow: 128000,
-        capabilities: { streaming: true, tools: true, vision: false },
-      },
-    ],
-  },
-
-  google: {
-    id: 'google',
-    name: 'Gemini',
-    type: 'google',
-    requiresApiKey: true,
-    defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-    icon: '/logos/gemini.svg',
-    models: [
-      {
-        id: 'gemini-3.6-flash',
-        name: 'Gemini 3.6 Flash',
-        contextWindow: 1048576,
-        outputWindow: 65536,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: false,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
-        },
-      },
-      {
-        id: 'gemini-3.5-flash-lite',
-        name: 'Gemini 3.5 Flash-Lite',
-        contextWindow: 1048576,
-        outputWindow: 65536,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: false,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
-        },
-      },
-      {
-        id: 'gemini-3.5-flash',
-        name: 'Gemini 3.5 Flash',
-        contextWindow: 1048576,
-        outputWindow: 65536,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: false,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
-        },
-      },
-      {
-        id: 'gemini-3.1-pro-preview',
-        name: 'Gemini 3.1 Pro Preview',
-        contextWindow: 1048576,
-        outputWindow: 65536,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: false,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
-        },
-      },
-      {
-        id: 'gemini-3-flash-preview',
-        name: 'Gemini 3 Flash Preview',
-        contextWindow: 1048576,
-        outputWindow: 65536,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: false,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
-        },
-      },
-      {
-        id: 'gemini-2.5-flash',
-        name: 'Gemini 2.5 Flash',
-        contextWindow: 1048576,
-        outputWindow: 65536,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: true,
-          },
-        },
-      },
-      {
-        id: 'gemini-2.5-flash-lite',
-        name: 'Gemini 2.5 Flash Lite',
-        contextWindow: 1048576,
-        outputWindow: 65536,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: true,
-            budgetAdjustable: true,
-            defaultEnabled: false,
-          },
-        },
-      },
-      {
-        id: 'gemini-2.5-pro',
-        name: 'Gemini 2.5 Pro',
-        contextWindow: 1048576,
-        outputWindow: 65536,
-        capabilities: {
-          streaming: true,
-          tools: true,
-          vision: true,
-          thinking: {
-            toggleable: false,
             budgetAdjustable: true,
             defaultEnabled: true,
           },
@@ -1829,55 +1628,17 @@ function normalizeMiniMaxAnthropicBaseUrl(
   return `${trimmed}/anthropic/v1`;
 }
 
-function resolveBedrockRegion(): string {
-  return (
-    process.env.BEDROCK_REGION?.trim() ||
-    process.env.AWS_REGION?.trim() ||
-    process.env.AWS_DEFAULT_REGION?.trim() ||
-    'us-east-1'
-  );
-}
-
-interface BedrockCredentials {
-  accessKeyId: string;
-  secretAccessKey: string;
-  sessionToken?: string;
-  expiration?: Date;
-}
-
-type BedrockCredentialProvider = () => Promise<BedrockCredentials>;
-
-let bedrockCredentialProviderPromise: Promise<BedrockCredentialProvider> | undefined;
-
-function getBedrockCredentialProvider(): Promise<BedrockCredentialProvider> {
-  bedrockCredentialProviderPromise ??= import('@aws-sdk/credential-providers').then(
-    ({ fromNodeProviderChain }) => fromNodeProviderChain(),
-  );
-  return bedrockCredentialProviderPromise;
-}
-
-function createBedrockCredentialProvider(): BedrockCredentialProvider {
-  return async () => {
-    const credentialProvider = await getBedrockCredentialProvider();
-    const credentials = await credentialProvider();
-    return {
-      accessKeyId: credentials.accessKeyId,
-      secretAccessKey: credentials.secretAccessKey,
-      sessionToken: credentials.sessionToken,
-      expiration: credentials.expiration,
-    };
-  };
-}
-
+/**
+ * The `openai` slot now serves only domestic (国模) models over the
+ * vendor-native OpenAI-compatible Chat Completions protocol, so no model id
+ * reaching it needs the Responses API. The heuristic and its call sites are
+ * kept for the id shapes that still name a Responses-only model when someone
+ * writes one into `DEFAULT_MODEL` / `MODEL_ROUTES` by hand.
+ */
 function shouldUseOpenAIResponsesApi(providerId: ProviderId, modelId: string): boolean {
   if (providerId !== 'openai') return false;
 
-  return (
-    /^gpt-5\.\d+-pro(?:-|$)/.test(modelId) ||
-    /^gpt-5\.6(?:-|$)/.test(modelId) ||
-    /^gpt-5\.5(?:-|$)/.test(modelId) ||
-    /^gpt-5\.[3-9]-codex(?:-|$)/.test(modelId)
-  );
+  return /^gpt-5\.\d+-pro(?:-|$)/.test(modelId) || /^gpt-5\.[3-9]-codex(?:-|$)/.test(modelId);
 }
 
 function usesCustomOpenAIBaseUrl(baseUrl?: string): boolean {
@@ -1971,6 +1732,37 @@ function getLlmDispatcher(): Promise<unknown> {
       throw error;
     });
   return llmDispatcherPromise;
+}
+
+const llmProxyDispatchers = new Map<string, Promise<unknown>>();
+
+/**
+ * Dispatcher for a provider configured with an operator-supplied proxy URL.
+ * Cached per URL so one agent is reused across requests. http/https proxies
+ * only — undici's Socks5ProxyAgent drops these timeouts, so socks5:// proxies
+ * keep undici's default 300 s cap (the same caveat this path has always had).
+ */
+function getLlmProxyDispatcher(proxyUrl: string): Promise<unknown> {
+  let dispatcher = llmProxyDispatchers.get(proxyUrl);
+  if (!dispatcher) {
+    dispatcher = import(/* webpackIgnore: true */ 'undici')
+      .then(
+        ({ ProxyAgent }) =>
+          new ProxyAgent({
+            uri: proxyUrl,
+            headersTimeout: LLM_FETCH_TIMEOUT_MS,
+            bodyTimeout: LLM_FETCH_TIMEOUT_MS,
+          }),
+      )
+      .catch((error: unknown) => {
+        // Drop the cache on failure so a transient import error doesn't brick
+        // every proxied call for the life of the worker.
+        llmProxyDispatchers.delete(proxyUrl);
+        throw error;
+      });
+    llmProxyDispatchers.set(proxyUrl, dispatcher);
+  }
+  return dispatcher;
 }
 
 async function fetchCustomOpenAIChat(
@@ -2164,6 +1956,10 @@ export function getModel(config: ModelConfig): ModelWithInfo {
   // (resolved at call time, so tests that stub it keep working).
   const baseTransportFetch: typeof fetch =
     config.fetchImpl ?? ((fetchInput, fetchInit) => globalThis.fetch(fetchInput, fetchInit));
+  // An operator-configured proxy wins over the direct dispatcher below. Built
+  // through undici so the LLM header/body budget survives the proxy hop, and
+  // cached per proxy URL for the life of the worker.
+  const proxyDispatcher = config.proxy ? getLlmProxyDispatcher(config.proxy) : undefined;
   // See LLM_FETCH_TIMEOUT_MS: every outbound LLM request — whatever transport
   // it ends up on — carries the extended-timeout dispatcher.
   const transportFetch: typeof fetch = async (fetchInput, fetchInit) => {
@@ -2171,6 +1967,19 @@ export function getModel(config: ModelConfig): ModelWithInfo {
     // ours; only inject ours when the request doesn't already carry one.
     if ((fetchInit as (RequestInit & { dispatcher?: unknown }) | undefined)?.dispatcher) {
       return baseTransportFetch(fetchInput, fetchInit);
+    }
+    if (proxyDispatcher) {
+      let dispatcher: unknown;
+      try {
+        dispatcher = await proxyDispatcher;
+      } catch (error) {
+        log.warn('[LLM transport] proxy dispatcher unavailable:', error);
+        return baseTransportFetch(fetchInput, fetchInit);
+      }
+      return baseTransportFetch(fetchInput, {
+        ...fetchInit,
+        dispatcher,
+      } as RequestInit);
     }
     let dispatcher: unknown;
     try {
@@ -2405,59 +2214,6 @@ export function getModel(config: ModelConfig): ModelWithInfo {
 
       const anthropic = createAnthropic(anthropicOptions);
       model = anthropic.chat(config.modelId);
-      break;
-    }
-
-    case 'bedrock': {
-      const bedrock = createAmazonBedrock({
-        apiKey: effectiveApiKey || undefined,
-        region: resolveBedrockRegion(),
-        baseURL: effectiveBaseUrl,
-        credentialProvider: createBedrockCredentialProvider(),
-        fetch: transportFetch,
-      });
-      model = bedrock(config.modelId);
-      break;
-    }
-
-    case 'google': {
-      const googleOptions: Parameters<typeof createGoogleGenerativeAI>[0] = {
-        apiKey: effectiveApiKey,
-        baseURL: effectiveBaseUrl,
-      };
-      if (config.proxy) {
-        const proxy = config.proxy;
-        let agent: unknown;
-        googleOptions.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-          const { ProxyAgent, fetch: undiciFetch } = (await import(
-            /* webpackIgnore: true */ 'undici'
-          )) as {
-            ProxyAgent: new (options: { uri: string } & Record<string, unknown>) => unknown;
-            fetch: (
-              input: string | URL | Request,
-              init?: Record<string, unknown>,
-            ) => Promise<unknown>;
-          };
-          // Same budget as the direct dispatcher: proxied or not, this is an
-          // LLM request whose headers may only arrive after minutes of thinking.
-          // (http/https proxies only — undici's Socks5ProxyAgent drops these
-          // options, so socks5:// proxies keep undici's default 300 s cap.)
-          agent ??= new ProxyAgent({
-            uri: proxy,
-            headersTimeout: LLM_FETCH_TIMEOUT_MS,
-            bodyTimeout: LLM_FETCH_TIMEOUT_MS,
-          });
-          const response = await undiciFetch(input, {
-            ...(init as Record<string, unknown>),
-            dispatcher: agent,
-          });
-          return response as Response;
-        }) as typeof fetch;
-      } else {
-        googleOptions.fetch = transportFetch;
-      }
-      const google = createGoogleGenerativeAI(googleOptions);
-      model = google.chat(config.modelId);
       break;
     }
 

@@ -1,8 +1,15 @@
-const MODEL_ID_ALIASES: ReadonlyMap<string, string> = new Map([['openai:gpt-5.6-sol', 'gpt-5.6']]);
-
-/** Resolve aliases used for local catalog, settings, capability, and usage lookups. */
-export function getCanonicalModelId(providerId: string, modelId: string): string {
-  return MODEL_ID_ALIASES.get(`${providerId}:${modelId}`) ?? modelId;
+/**
+ * Resolve the ID used for local catalog, settings, capability, and usage lookups.
+ *
+ * The catalogue used to carry per-provider renames (a shipped id that later
+ * resolved to a different catalogue entry, e.g. the Sol alias for GPT-5.6).
+ * Every entry was for a model the `openai` slot no longer serves, so the
+ * mapping is gone and an ID is now its own canonical form. The seam stays: it
+ * is the single place callers go through, so a future rename only has to be
+ * taught here.
+ */
+export function getCanonicalModelId(_providerId: string, modelId: string): string {
+  return modelId;
 }
 
 export function modelIdsMatch(providerId: string, left: string, right: string): boolean {

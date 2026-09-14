@@ -425,7 +425,7 @@ describe('fetchServerProviders — provider availability sync', () => {
     expect(models[1].name).toBe('GPT-4o');
   });
 
-  it('enriches a managed GPT-5.6 Sol alias with canonical catalog metadata', async () => {
+  it('carries client-side catalog metadata over to a server-managed model ID', async () => {
     const store = await getStore();
     store.setState({
       providersConfig: {
@@ -434,16 +434,13 @@ describe('fetchServerProviders — provider availability sync', () => {
           ...store.getState().providersConfig.openai,
           models: [
             {
-              id: 'gpt-5.6',
-              name: 'GPT-5.6 Sol',
-              contextWindow: 1050000,
-              outputWindow: 128000,
+              id: 'gpt-4o',
+              name: 'GPT-4o',
+              contextWindow: 128000,
+              outputWindow: 16384,
               capabilities: {
                 vision: true,
-                thinking: {
-                  requestAdapter: 'openai',
-                  defaultEffort: 'medium',
-                },
+                thinking: { requestAdapter: 'openai', defaultEffort: 'medium' },
               },
             },
           ],
@@ -452,7 +449,7 @@ describe('fetchServerProviders — provider availability sync', () => {
     });
     mockServerResponse({
       providers: {
-        openai: { models: ['gpt-5.6-sol'] },
+        openai: { models: ['gpt-4o'] },
       },
     });
 
@@ -460,32 +457,81 @@ describe('fetchServerProviders — provider availability sync', () => {
 
     const model = store.getState().providersConfig.openai.models[0];
     expect(model).toMatchObject({
-      id: 'gpt-5.6-sol',
-      name: 'GPT-5.6 Sol',
-      contextWindow: 1050000,
-      outputWindow: 128000,
+      id: 'gpt-4o',
+      name: 'GPT-4o',
+      contextWindow: 128000,
+      outputWindow: 16384,
       capabilities: {
         vision: true,
-        thinking: {
-          requestAdapter: 'openai',
-          defaultEffort: 'medium',
-        },
+        thinking: { requestAdapter: 'openai', defaultEffort: 'medium' },
       },
     });
   });
 
-  it('switches a canonical selection to the alias when the managed allowlist only permits it', async () => {
+  it('does not give a wire ID the metadata of a differently-named catalog model', async () => {
     const store = await getStore();
-    store.setState({ providerId: 'openai', modelId: 'gpt-5.6' });
+    store.setState({
+      providersConfig: {
+        ...store.getState().providersConfig,
+        openai: {
+          ...store.getState().providersConfig.openai,
+          models: [
+            {
+              id: 'gpt-4o',
+              name: 'GPT-4o',
+              contextWindow: 128000,
+              outputWindow: 16384,
+              capabilities: { vision: true },
+            },
+          ],
+        },
+      },
+    });
     mockServerResponse({
       providers: {
-        openai: { models: ['gpt-5.6-sol'] },
+        openai: { models: ['gpt-4o-mini'] },
       },
     });
 
     await store.getState().fetchServerProviders();
 
-    expect(store.getState().modelId).toBe('gpt-5.6-sol');
+    const model = store.getState().providersConfig.openai.models[0];
+    // No alias expansion any more: an ID the catalogue doesn't serve stands on
+    // its own, so it must not silently inherit gpt-4o's windows or capabilities.
+    expect(model.id).toBe('gpt-4o-mini');
+    expect(model.name).toBe('GPT-4o Mini');
+    expect(model.contextWindow).toBeUndefined();
+    expect(model.capabilities?.vision).toBeUndefined();
+  });
+
+  it('falls back to the first allowed model when the selection is not in the managed allowlist', async () => {
+    const store = await getStore();
+    store.setState({
+      providerId: 'openai',
+      modelId: 'gpt-4-turbo',
+      providersConfig: {
+        ...store.getState().providersConfig,
+        openai: {
+          ...store.getState().providersConfig.openai,
+          apiKey: 'sk-client',
+        },
+      },
+    });
+    mockServerResponse({
+      providers: {
+        openai: { models: ['gpt-4o-mini', 'gpt-4o'] },
+      },
+    });
+
+    await store.getState().fetchServerProviders();
+
+    // gpt-4-turbo is gone from the allowlist and has no alias to fall back to,
+    // so #580's invariant resolves the selection to the first allowed model.
+    expect(store.getState().providersConfig.openai.models.map((m) => m.id)).toEqual([
+      'gpt-4o-mini',
+      'gpt-4o',
+    ]);
+    expect(store.getState().modelId).toBe('gpt-4o-mini');
   });
 
   it('keeps all models when server provides no model restriction', async () => {
@@ -582,14 +628,14 @@ describe('fetchServerProviders — provider availability sync', () => {
     mockServerResponse({
       providers: {
         openai: { models: ['gpt-4o'] },
-        // anthropic not in response
+        // deepseek not in response
       },
     });
 
     await store.getState().fetchServerProviders();
 
     expect(store.getState().providersConfig.openai.isServerConfigured).toBe(true);
-    expect(store.getState().providersConfig.anthropic.isServerConfigured).toBe(false);
+    expect(store.getState().providersConfig.deepseek.isServerConfigured).toBe(false);
   });
 
   // ---- serverModels metadata ----
@@ -1376,24 +1422,25 @@ describe('usable provider ⇒ concrete model invariant (#580)', () => {
     expect(store.getState().modelId).toBe('gpt-4o');
   });
 
-  it('preserves an alias wire ID when provider config contains its canonical model', async () => {
+  it('keeps a selection that the provider config still serves', async () => {
     const store = await getStore();
     store.setState({
       providerId: 'openai',
-      modelId: 'gpt-5.6-sol',
+      modelId: 'gpt-4-turbo',
       providersConfig: {
         ...store.getState().providersConfig,
         openai: {
           ...store.getState().providersConfig.openai,
           apiKey: 'sk-client',
-          models: [{ id: 'gpt-5.6', name: 'GPT-5.6 Sol' }],
+          models: [{ id: 'gpt-4-turbo', name: 'GPT-4 Turbo' }],
         },
       },
     });
 
     store.getState().setProviderConfig('openai', { baseUrl: 'https://api.openai.com/v1' });
 
-    expect(store.getState().modelId).toBe('gpt-5.6-sol');
+    // The config serves this exact ID, so no fallback is triggered.
+    expect(store.getState().modelId).toBe('gpt-4-turbo');
   });
 
   it('configuring a non-active provider does not hijack the current selection', async () => {
@@ -1402,11 +1449,11 @@ describe('usable provider ⇒ concrete model invariant (#580)', () => {
     mockServerResponse({});
     await store.getState().fetchServerProviders();
     store.setState({
-      providerId: 'anthropic',
-      modelId: 'claude-sonnet-4-6',
+      providerId: 'deepseek',
+      modelId: 'deepseek-v4-pro',
       providersConfig: {
         ...store.getState().providersConfig,
-        anthropic: { ...store.getState().providersConfig.anthropic, apiKey: 'sk-a' },
+        deepseek: { ...store.getState().providersConfig.deepseek, apiKey: 'sk-a' },
       },
     });
 
@@ -1416,8 +1463,8 @@ describe('usable provider ⇒ concrete model invariant (#580)', () => {
       requiresApiKey: true,
     });
 
-    expect(store.getState().providerId).toBe('anthropic');
-    expect(store.getState().modelId).toBe('claude-sonnet-4-6');
+    expect(store.getState().providerId).toBe('deepseek');
+    expect(store.getState().modelId).toBe('deepseek-v4-pro');
   });
 
   it('switching image provider resolves the new provider model (not a stale one)', async () => {

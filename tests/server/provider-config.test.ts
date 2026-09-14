@@ -136,9 +136,9 @@ describe('provider-config', () => {
     });
 
     it('resolves non-OpenAI providers via their env prefix', async () => {
-      vi.stubEnv('ANTHROPIC_API_KEY', 'sk-anthropic');
+      vi.stubEnv('DEEPSEEK_API_KEY', 'sk-deepseek');
       const { resolveApiKey } = await import('@/lib/server/provider-config');
-      expect(resolveApiKey('anthropic')).toBe('sk-anthropic');
+      expect(resolveApiKey('deepseek')).toBe('sk-deepseek');
     });
 
     it('resolves Azure OpenAI via its dedicated env prefix', async () => {
@@ -254,12 +254,12 @@ providers:
 
     it('lists multiple providers', async () => {
       vi.stubEnv('OPENAI_API_KEY', 'sk-openai');
-      vi.stubEnv('ANTHROPIC_API_KEY', 'sk-anthropic');
+      vi.stubEnv('DEEPSEEK_API_KEY', 'sk-deepseek');
       const { getServerProviders } = await import('@/lib/server/provider-config');
       const providers = getServerProviders();
 
       expect(Object.keys(providers)).toContain('openai');
-      expect(Object.keys(providers)).toContain('anthropic');
+      expect(Object.keys(providers)).toContain('deepseek');
     });
 
     it('maps OpenRouter env prefix to provider ID', async () => {
@@ -331,45 +331,6 @@ providers:
       const providers = getServerProviders();
 
       expect(providers.openai).toBeUndefined();
-    });
-
-    it('includes Bedrock from env without an API key', async () => {
-      vi.stubEnv('BEDROCK_REGION', 'us-east-1');
-      vi.stubEnv('BEDROCK_MODELS', ' us.anthropic.claude-sonnet-5 , us.anthropic.claude-opus-4-8 ');
-      const { getServerProviders, resolveApiKey, resolveBaseUrl } =
-        await import('@/lib/server/provider-config');
-      const providers = getServerProviders();
-
-      expect(providers.bedrock).toEqual({
-        models: ['us.anthropic.claude-sonnet-5', 'us.anthropic.claude-opus-4-8'],
-      });
-      expect(resolveApiKey('bedrock')).toBe('');
-      expect(resolveBaseUrl('bedrock')).toBeUndefined();
-    });
-
-    it('does not enable Bedrock for whitespace-only region and models', async () => {
-      vi.stubEnv('BEDROCK_REGION', '   ');
-      vi.stubEnv('BEDROCK_MODELS', ' , ');
-      const { getServerProviders } = await import('@/lib/server/provider-config');
-
-      expect(getServerProviders().bedrock).toBeUndefined();
-    });
-
-    it('includes Bedrock from YAML with only models configured', async () => {
-      yamlOverride = `
-providers:
-  bedrock:
-    models:
-      - us.anthropic.claude-sonnet-5
-      - us.anthropic.claude-opus-4-8
-`;
-      const { getServerProviders } = await import('@/lib/server/provider-config');
-      const providers = getServerProviders();
-
-      expect(providers.bedrock.models).toEqual([
-        'us.anthropic.claude-sonnet-5',
-        'us.anthropic.claude-opus-4-8',
-      ]);
     });
   });
 

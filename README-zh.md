@@ -20,7 +20,7 @@
   <a href="https://jcst.ict.ac.cn/en/article/doi/10.1007/s11390-025-6000-0"><img src="https://img.shields.io/badge/Paper-JCST'26-blue?style=flat-square" alt="Paper"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="License: MIT"/></a>
   <a href="https://open.maic.chat/"><img src="https://img.shields.io/badge/Demo-Live-brightgreen?style=flat-square" alt="Live Demo"/></a>
-  <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC&envDescription=Configure%20at%20least%20one%20LLM%20provider%20API%20key%20(e.g.%20OPENAI_API_KEY%2C%20ANTHROPIC_API_KEY).%20All%20providers%20are%20optional.&envLink=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC%2Fblob%2Fmain%2F.env.example&project-name=openmaic&framework=nextjs"><img src="https://vercel.com/button" alt="Deploy with Vercel" height="20"/></a>
+  <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC&envDescription=Configure%20at%20least%20one%20LLM%20provider%20API%20key%20(e.g.%20OPENAI_API_KEY%2C%20DEEPSEEK_API_KEY).%20All%20providers%20are%20optional.&envLink=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC%2Fblob%2Fmain%2F.env.example&project-name=openmaic&framework=nextjs"><img src="https://vercel.com/button" alt="Deploy with Vercel" height="20"/></a>
   <a href="#-agent-工作台集成"><img src="https://img.shields.io/badge/OpenClaw-集成-F4511E?style=flat-square" alt="OpenClaw 集成"/></a>
   <a href="#lemonade-local-ai"><img src="https://img.shields.io/badge/Lemonade-Local_AI-FFD43B?style=flat-square" alt="Lemonade Local AI"/></a>
   <a href="https://github.com/THU-MAIC/OpenMAIC/stargazers"><img src="https://img.shields.io/github/stars/THU-MAIC/OpenMAIC?style=flat-square" alt="Stars"/></a>
@@ -116,14 +116,19 @@ OPENAI_API_KEY=sk-...
 AZURE_OPENAI_API_KEY=...
 AZURE_OPENAI_BASE_URL=https://YOUR-RESOURCE.openai.azure.com/openai
 AZURE_OPENAI_MODELS=YOUR-DEPLOYMENT-NAME
-ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_API_KEY=...
+DEEPSEEK_API_KEY=...
+QWEN_API_KEY=...
+KIMI_API_KEY=...
+GLM_API_KEY=...
+MINIMAX_API_KEY=...
 GROK_API_KEY=xai-...
 OPENROUTER_API_KEY=sk-or-...
+DOUBAO_API_KEY=...
 TENCENT_API_KEY=sk-...
 XIAOMI_API_KEY=...
-# 或使用 AWS 凭证和 BEDROCK_REGION 配置 Amazon Bedrock。
 ```
+
+`OPENAI_API_KEY` 是通用的 OpenAI 兼容通道：开箱即用，默认提供内置国模目录（Qwen、DeepSeek、GLM、Kimi）。把 `OPENAI_BASE_URL` 指向中转或网关即可改由那里提供；也可以用 `OPENAI_MODELS` 收窄范围。
 
 也可以通过 `server-providers.yml` 配置服务商：
 
@@ -136,25 +141,20 @@ providers:
     baseUrl: https://YOUR-RESOURCE.openai.azure.com/openai
     models:
       - YOUR-DEPLOYMENT-NAME
-  anthropic:
-    apiKey: sk-ant-...
-  bedrock:
-    models:
-      - us.anthropic.claude-sonnet-5
-      - us.anthropic.claude-opus-4-8
+  deepseek:
+    apiKey: sk-...
+  atlascloud:
+    apiKey: ...
 ```
 
-支持的服务商：**OpenAI**、**Azure OpenAI**、**Anthropic**、**Amazon Bedrock**、**Google Gemini**、**DeepSeek**、**通义千问 Qwen**、**Kimi**、**MiniMax**、**Grok (xAI)**、**OpenRouter**、**豆包**、**腾讯混元 / TokenHub**、**小米 MiMo**、**智谱 GLM**、**Ollama**（本地）、**Lemonade**（本地 LLM / 图像 / TTS / ASR）、**FunASR**（本地 ASR）以及任何兼容 OpenAI API 的服务。
+支持的服务商：**OpenAI 兼容**（内置国模目录）、**Azure OpenAI**、**AtlasCloud**、**DeepSeek**、**通义千问 Qwen**、**Kimi**、**MiniMax**、**Grok (xAI)**、**OpenRouter**、**豆包**、**腾讯混元 / TokenHub**、**小米 MiMo**、**智谱 GLM**、**SiliconFlow**、**Ollama**（本地）、**Lemonade**（本地 LLM / 图像 / TTS / ASR）、**FunASR**（本地 ASR）以及任何兼容 OpenAI API 的服务。
 
-Amazon Bedrock 快速示例：
+OpenAI 兼容通道快速示例：
 
 ```env
-BEDROCK_REGION=us-east-1
-BEDROCK_MODELS=us.anthropic.claude-sonnet-5,us.anthropic.claude-opus-4-8
-DEFAULT_MODEL=bedrock:us.anthropic.claude-sonnet-5
+OPENAI_API_KEY=sk-...
+DEFAULT_MODEL=openai:qwen3.7-plus
 ```
-
-Bedrock 使用 AWS 环境凭证或 AWS SDK 凭证链。临时凭证可设置 `AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY` 和 `AWS_SESSION_TOKEN`，也可以使用运行环境可用的 AWS profile / role。
 
 <a id="lemonade-local-ai"></a>
 
@@ -193,11 +193,11 @@ ASR_FUNASR_BASE_URL=http://localhost:8000/v1
 
 纯 CPU 环境可运行 `funasr-server --device cpu --model sensevoice`。生产部署方式参见 [FunASR 部署指南](https://github.com/modelscope/FunASR#deploy)。
 
-OpenAI 快速示例：
+OpenAI 兼容通道快速示例：
 
 ```env
 OPENAI_API_KEY=sk-...
-DEFAULT_MODEL=openai:gpt-5.5
+DEFAULT_MODEL=openai:qwen3.7-plus
 ```
 
 MiniMax 快速示例：
@@ -244,9 +244,9 @@ GLM_BASE_URL=https://api.z.ai/api/paas/v4
 DEFAULT_MODEL=glm:glm-5.1
 ```
 
-> **推荐模型：** **Gemini 3 Flash** — 效果与速度的最佳平衡。追求最高质量可选 **Gemini 3.1 Pro**（速度较慢）。
+> **推荐模型：** **Qwen3.7 Plus** — 内置目录中效果与速度的最佳平衡。追求最高质量可选 **DeepSeek V4 Pro**（速度较慢）。
 >
-> 如果希望 OpenMAIC 服务端默认走 Gemini，还需要额外设置 `DEFAULT_MODEL=google:gemini-3-flash-preview`。
+> 如果希望 OpenMAIC 服务端默认走指定模型，还需要额外设置 `DEFAULT_MODEL=openai:qwen3.7-plus`。
 >
 > 如果希望默认走 MiniMax，可设置 `DEFAULT_MODEL=minimax:MiniMax-M2.7-highspeed`。
 
@@ -276,7 +276,7 @@ ACCESS_CODE=your-secret-code
 
 ### Vercel 部署
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC&envDescription=Configure%20at%20least%20one%20LLM%20provider%20API%20key%20(e.g.%20OPENAI_API_KEY%2C%20ANTHROPIC_API_KEY).%20All%20providers%20are%20optional.&envLink=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC%2Fblob%2Fmain%2F.env.example&project-name=openmaic&framework=nextjs)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC&envDescription=Configure%20at%20least%20one%20LLM%20provider%20API%20key%20(e.g.%20OPENAI_API_KEY%2C%20DEEPSEEK_API_KEY).%20All%20providers%20are%20optional.&envLink=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC%2Fblob%2Fmain%2F.env.example&project-name=openmaic&framework=nextjs)
 
 或者手动部署：
 

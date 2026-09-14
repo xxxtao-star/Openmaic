@@ -1231,9 +1231,6 @@
     "providerNames": {
       "openai": "OpenAI",
       "azure": "Azure OpenAI",
-      "anthropic": "Claude",
-      "google": "Gemini",
-      "bedrock": "Amazon Bedrock",
       "deepseek": "DeepSeek",
       "qwen": "Qwen",
       "kimi": "Kimi",
@@ -1257,10 +1254,7 @@
     },
     "providerTypes": {
       "openai": "OpenAI 프로토콜",
-      "azure": "Azure OpenAI",
-      "anthropic": "Claude 프로토콜",
-      "google": "Gemini 프로토콜",
-      "bedrock": "Amazon Bedrock"
+      "azure": "Azure OpenAI"
     },
     "modelCount": "개 모델",
     "modelSingular": "개 모델",
@@ -1315,9 +1309,6 @@
     "providerNamePlaceholder": "예: 나의 OpenAI 프록시",
     "providerNameRequired": "제공업체 이름을 입력하세요",
     "providerApiMode": "API 모드",
-    "apiModeOpenAI": "OpenAI 프로토콜",
-    "apiModeAnthropic": "Claude 프로토콜",
-    "apiModeGoogle": "Gemini 프로토콜",
     "defaultBaseUrl": "기본 Base URL",
     "providerIcon": "제공업체 아이콘 URL",
     "requiresApiKey": "API 키 필요",

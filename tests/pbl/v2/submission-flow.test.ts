@@ -67,8 +67,8 @@ describe('PBL v2 — post-submission flow', () => {
     );
   });
 
-  it('recognizes the explicit GPT-5.6 Sol ID as vision-capable', () => {
-    const model = findModelById('openai', PROVIDERS.openai.models, 'gpt-5.6-sol');
+  it('recognizes a vision-capable catalog ID from the shared OpenAI channel', () => {
+    const model = findModelById('openai', PROVIDERS.openai.models, 'qwen3.7-plus');
 
     expect(model?.capabilities?.vision).toBe(true);
     expect(

@@ -99,12 +99,6 @@ export async function resolveModel(params: {
       `Provider type mismatch for ${providerId}: expected ${registeredProviderType}, received ${clientProviderType}.`,
     );
   }
-  const effectiveProviderType = (clientProviderType || registeredProviderType) as
-    | ProviderType
-    | undefined;
-  if (effectiveProviderType === 'bedrock' && (providerId !== 'bedrock' || !managed)) {
-    throw new Error('Amazon Bedrock must be enabled by the server operator before it can be used.');
-  }
   const clientBaseUrl = managed ? undefined : clientBaseUrlParam || undefined;
   if (clientBaseUrl) {
     const ssrfError = await validateUrlForSSRF(clientBaseUrl);

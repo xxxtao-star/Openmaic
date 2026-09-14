@@ -41,12 +41,12 @@ describe('LLM thinking provider options', () => {
     usageMock.recordUsage.mockClear();
   });
 
-  it('sends GPT-5.6 max reasoning effort through OpenAI provider options', async () => {
+  it('sends max reasoning effort through OpenAI provider options', async () => {
     await callLLM(
       {
         model: {
           provider: 'openai.responses',
-          modelId: 'gpt-5.6',
+          modelId: 'kimi-k3',
         },
         prompt: 'hi',
       } as Parameters<typeof callLLM>[0],
@@ -66,33 +66,28 @@ describe('LLM thinking provider options', () => {
     );
   });
 
-  it('sends max reasoning effort for the GPT-5.6 Sol model ID alias', async () => {
+  it('keeps the requested effort when the model ID is not collapsed to an alias', async () => {
     await callLLM(
       {
         model: {
           provider: 'openai.responses',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'qwen3.7-max',
         },
         prompt: 'hi',
       } as Parameters<typeof callLLM>[0],
       'test',
       undefined,
-      { mode: 'enabled', effort: 'max' },
+      { mode: 'enabled', budgetTokens: 8192 },
     );
 
+    // qwen3.7-max is a budget model, not an effort one, so the effort adapter
+    // contributes nothing — and the exact ID still resolves its own capability.
     expect(aiMock.generateText).toHaveBeenCalledWith(
-      expect.objectContaining({
-        model: expect.objectContaining({ modelId: 'gpt-5.6-sol' }),
-        providerOptions: {
-          openai: {
-            reasoningEffort: 'max',
-          },
-        },
-      }),
+      expect.not.objectContaining({ providerOptions: expect.anything() }),
     );
   });
 
-  it('aggregates GPT-5.6 Sol alias usage under the canonical model ID', async () => {
+  it('aggregates usage under the model ID the catalogue serves', async () => {
     aiMock.generateText.mockResolvedValueOnce({
       text: 'ok',
       params: undefined,
@@ -103,7 +98,7 @@ describe('LLM thinking provider options', () => {
       {
         model: {
           provider: 'openai.responses',
-          modelId: 'gpt-5.6-sol',
+          modelId: 'glm-5.3',
         },
         prompt: 'hi',
       } as Parameters<typeof callLLM>[0],
@@ -114,8 +109,8 @@ describe('LLM thinking provider options', () => {
       expect(usageMock.recordUsage).toHaveBeenCalledWith(
         expect.objectContaining({
           providerId: 'openai',
-          modelId: 'gpt-5.6',
-          modelString: 'openai:gpt-5.6',
+          modelId: 'glm-5.3',
+          modelString: 'openai:glm-5.3',
         }),
       );
     });
@@ -278,35 +273,6 @@ describe('LLM thinking provider options', () => {
     });
   });
 
-  it('sends Claude Haiku 4.5 thinking budget without effort', async () => {
-    await callLLM(
-      {
-        model: {
-          provider: 'anthropic.messages',
-          modelId: 'claude-haiku-4-5',
-        },
-        prompt: 'hi',
-      } as Parameters<typeof callLLM>[0],
-      'test',
-      undefined,
-      { mode: 'enabled', budgetTokens: 4096 },
-    );
-
-    expect(aiMock.generateText).toHaveBeenCalledWith(
-      expect.objectContaining({
-        providerOptions: {
-          anthropic: {
-            thinking: { type: 'enabled', budgetTokens: 4096 },
-          },
-        },
-      }),
-    );
-    const params = aiMock.generateText.mock.calls[0]?.[0] as {
-      providerOptions?: { anthropic?: Record<string, unknown> };
-    };
-    expect(params.providerOptions?.anthropic).not.toHaveProperty('effort');
-  });
-
   it('sends MiniMax M3 thinking disablement through Anthropic provider options', async () => {
     await callLLM(
       {
@@ -326,58 +292,6 @@ describe('LLM thinking provider options', () => {
         providerOptions: {
           anthropic: {
             thinking: { type: 'disabled' },
-          },
-        },
-      }),
-    );
-  });
-
-  it('coerces disabled thinking to the lowest supported effort for Claude Fable 5', async () => {
-    await callLLM(
-      {
-        model: {
-          provider: 'anthropic.messages',
-          modelId: 'claude-fable-5',
-        },
-        prompt: 'hi',
-      } as Parameters<typeof callLLM>[0],
-      'test',
-      undefined,
-      { mode: 'disabled' },
-    );
-
-    expect(aiMock.generateText).toHaveBeenCalledWith(
-      expect.objectContaining({
-        providerOptions: {
-          anthropic: {
-            thinking: { type: 'adaptive' },
-            effort: 'low',
-          },
-        },
-      }),
-    );
-  });
-
-  it('sends xhigh reasoning effort for Claude 5 models', async () => {
-    await callLLM(
-      {
-        model: {
-          provider: 'anthropic.messages',
-          modelId: 'claude-opus-5',
-        },
-        prompt: 'hi',
-      } as Parameters<typeof callLLM>[0],
-      'test',
-      undefined,
-      { mode: 'enabled', effort: 'xhigh' },
-    );
-
-    expect(aiMock.generateText).toHaveBeenCalledWith(
-      expect.objectContaining({
-        providerOptions: {
-          anthropic: {
-            thinking: { type: 'adaptive' },
-            effort: 'xhigh',
           },
         },
       }),

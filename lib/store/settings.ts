@@ -12,7 +12,7 @@ import { persist } from 'zustand/middleware';
 import type { ProviderId } from '@/lib/ai/providers';
 import type { ProvidersConfig } from '@/lib/types/settings';
 import { PROVIDERS } from '@/lib/ai/providers';
-import { findModelById, getCanonicalModelId } from '@/lib/ai/model-aliases';
+import { findModelById } from '@/lib/ai/model-aliases';
 import type { ThinkingConfig } from '@/lib/types/provider';
 import { getThinkingConfigKey, supportsConfigurableThinking } from '@/lib/ai/thinking-config';
 import type { TTSProviderId, ASRProviderId, BuiltInTTSProviderId } from '@/lib/audio/types';
@@ -439,20 +439,19 @@ function resolveLLMSelection(
   return { providerId, modelId };
 }
 
-/** Keep the caller's wire model ID when it resolves to a known catalog alias. */
+/**
+ * Drop a model ID the provider no longer serves.
+ *
+ * There is no alias step any more — an ID either is in the catalogue or it is
+ * stale — so a persisted selection from a previous catalogue falls back to the
+ * provider's first model. `#580`.
+ */
 function resolveSelectedLLMModel(
-  providerId: ProviderId,
+  _providerId: ProviderId,
   currentModelId: string,
   availableModels: Array<{ id: string }>,
 ): string {
   if (availableModels.some((model) => model.id === currentModelId)) return currentModelId;
-  const canonicalModelId = getCanonicalModelId(providerId, currentModelId);
-  if (
-    canonicalModelId !== currentModelId &&
-    availableModels.some((model) => model.id === canonicalModelId)
-  ) {
-    return currentModelId;
-  }
   return availableModels[0]?.id ?? '';
 }
 
@@ -710,6 +709,17 @@ function ensureValidProviderSelections(state: Partial<SettingsState>): void {
   ) {
     state.asrProviderId = defaultAudioConfig.asrProviderId;
   }
+
+  // An LLM selection pointing at a provider that no longer exists (e.g. the
+  // user picked a channel later removed from the registry, and
+  // ensureBuiltInProviders just pruned it) must not survive rehydrate. Only
+  // existence is checked here — usability is the server-sync path's job, and
+  // enforcing it during merge would clobber selections that are merely not
+  // configured yet.
+  if (state.providersConfig && state.providerId && !state.providersConfig[state.providerId]) {
+    state.providerId = '' as ProviderId;
+    state.modelId = '';
+  }
 }
 
 function ensureBuiltInAudioProviders(state: Partial<SettingsState>): void {
@@ -750,6 +760,20 @@ function ensureBuiltInAudioProviders(state: Partial<SettingsState>): void {
 function ensureBuiltInProviders(state: Partial<SettingsState>): void {
   if (!state.providersConfig) return;
   const defaultConfig = getDefaultProvidersConfig();
+
+  // Drop built-in entries whose provider no longer exists in the registry.
+  // Without this, a provider removed from `PROVIDERS` keeps coming back on
+  // every rehydrate: `merge` lets persisted keys win over the defaults, so the
+  // stale channel (and its models) stays listed in settings forever. Only
+  // built-ins are pruned — user-created providers (`isBuiltIn: false`) are not
+  // registry-backed and must survive.
+  for (const pid of Object.keys(state.providersConfig)) {
+    const config = state.providersConfig[pid as ProviderId];
+    if (config?.isBuiltIn && !(pid in PROVIDERS)) {
+      delete state.providersConfig[pid as ProviderId];
+    }
+  }
+
   Object.keys(PROVIDERS).forEach((pid) => {
     const providerId = pid as ProviderId;
     if (!state.providersConfig![providerId]) {

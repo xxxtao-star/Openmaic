@@ -19,27 +19,26 @@ OPENAI_MODELS=                  # 任意の許可モデル一覧（カンマ区�
 
 対応している provider prefix:
 
-| Prefix             | プロバイダー                                     |
-| ------------------ | ------------------------------------------------ |
-| `OPENAI_`          | OpenAI                                           |
-| `AZURE_OPENAI_`    | Azure OpenAI                                     |
-| `ANTHROPIC_`       | Anthropic                                        |
-| `GOOGLE_`          | Google Gemini                                    |
-| `DEEPSEEK_`        | DeepSeek                                         |
-| `QWEN_`            | Alibaba Qwen                                     |
-| `KIMI_`            | Moonshot Kimi                                    |
-| `MINIMAX_`         | MiniMax（既定では Anthropic 互換エンドポイント） |
-| `GLM_`             | Zhipu GLM                                        |
-| `SILICONFLOW_`     | SiliconFlow                                      |
-| `DOUBAO_`          | Doubao（ByteDance）                              |
-| `OPENROUTER_`      | OpenRouter                                       |
-| `GROK_`            | xAI Grok                                         |
-| `TENCENT_`         | Tencent Hunyuan                                  |
-| `TENCENT_HUNYUAN_` | Tencent Hunyuan（別名）                          |
-| `XIAOMI_`          | Xiaomi MiMo                                      |
-| `MIMO_`            | Xiaomi MiMo（別名）                              |
-| `OLLAMA_`          | Ollama（ローカル）                               |
-| `LEMONADE_`        | Lemonade（ローカル）                             |
+| Prefix               | プロバイダー                                      |
+| -------------------- | ------------------------------------------------- |
+| `OPENAI_`            | OpenAI 互換チャネル（国内モデルカタログを同梱）   |
+| `AZURE_OPENAI_`      | Azure OpenAI                                      |
+| `ATLASCLOUD_`        | AtlasCloud                                        |
+| `DEEPSEEK_`          | DeepSeek                                          |
+| `QWEN_`              | Alibaba Qwen                                      |
+| `KIMI_`              | Moonshot Kimi                                     |
+| `MINIMAX_`           | MiniMax（既定で Anthropic 互換エンドポイント）    |
+| `GLM_`               | Zhipu GLM                                         |
+| `SILICONFLOW_`       | SiliconFlow                                       |
+| `DOUBAO_`            | Doubao（ByteDance）                               |
+| `OPENROUTER_`        | OpenRouter                                        |
+| `GROK_`              | xAI Grok                                          |
+| `TENCENT_`           | Tencent Hunyuan                                   |
+| `TENCENT_HUNYUAN_`   | Tencent Hunyuan（別名）                           |
+| `XIAOMI_`            | Xiaomi MiMo                                       |
+| `MIMO_`              | Xiaomi MiMo（別名）                               |
+| `OLLAMA_`            | Ollama（ローカル）                                |
+| `LEMONADE_`          | Lemonade（ローカル）                              |
 
 Azure OpenAI は deployment name をモデル ID として使います：
 
@@ -203,7 +202,7 @@ ACCESS_CODE=your-secret-code
 サーバー API がクライアントからモデル指定を受け取らない場合、`DEFAULT_MODEL` でデフォルトモデルを指定します。モデル指定は `provider:model-id` 形式です。例：
 
 ```bash
-DEFAULT_MODEL=openai:gpt-5.5
+DEFAULT_MODEL=openai:qwen3.7-plus
 ```
 
 `MODEL_ROUTES` で生成の各フェーズに別モデルを割り当て可能です。未設定フェーズはクライアント指定モデルか `DEFAULT_MODEL` を使います。JSON オブジェクトで、キーがフェーズ名、値がモデル文字列または `model` と `thinking` を含むオブジェクトです。完全なフェーズ一覧と例はリポジトリの [`.env.example`](https://github.com/THU-MAIC/OpenMAIC/blob/main/.env.example) を参照してください。
@@ -264,9 +263,9 @@ providers:
     apiKey: sk-...
     baseUrl: https://api.openai.com/v1
     models:
-      - gpt-5.5
-  anthropic:
-    apiKey: sk-ant-...
+      - qwen3.7-plus
+  deepseek:
+    apiKey: sk-...
 
 tts:
   doubao-tts:

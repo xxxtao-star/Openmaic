@@ -19,27 +19,26 @@ OPENAI_MODELS=                  # 選填的模型白名單（以逗號分隔）
 
 支援的 provider 字首：
 
-| 字首               | 供應商                               |
-| ------------------ | ------------------------------------ |
-| `OPENAI_`          | OpenAI                               |
-| `AZURE_OPENAI_`    | Azure OpenAI                         |
-| `ANTHROPIC_`       | Anthropic                            |
-| `GOOGLE_`          | Google Gemini                        |
-| `DEEPSEEK_`        | DeepSeek                             |
-| `QWEN_`            | Alibaba Qwen                         |
-| `KIMI_`            | Moonshot Kimi                        |
-| `MINIMAX_`         | MiniMax（預設用 Anthropic 相容端點） |
-| `GLM_`             | Zhipu GLM                            |
-| `SILICONFLOW_`     | SiliconFlow                          |
-| `DOUBAO_`          | Doubao（ByteDance）                  |
-| `OPENROUTER_`      | OpenRouter                           |
-| `GROK_`            | xAI Grok                             |
-| `TENCENT_`         | Tencent Hunyuan                      |
-| `TENCENT_HUNYUAN_` | Tencent Hunyuan（別名）              |
-| `XIAOMI_`          | Xiaomi MiMo                          |
-| `MIMO_`            | Xiaomi MiMo（別名）                  |
-| `OLLAMA_`          | Ollama（本機）                       |
-| `LEMONADE_`        | Lemonade（本機）                     |
+| 字首                 | 供應商                                   |
+| -------------------- | ---------------------------------------- |
+| `OPENAI_`            | OpenAI 相容通道（內建國模目錄）          |
+| `AZURE_OPENAI_`      | Azure OpenAI                             |
+| `ATLASCLOUD_`        | AtlasCloud                               |
+| `DEEPSEEK_`          | DeepSeek                                 |
+| `QWEN_`              | Alibaba Qwen                             |
+| `KIMI_`              | Moonshot Kimi                            |
+| `MINIMAX_`           | MiniMax（預設使用 Anthropic 相容端點）   |
+| `GLM_`               | Zhipu GLM                                |
+| `SILICONFLOW_`       | SiliconFlow                              |
+| `DOUBAO_`            | Doubao（ByteDance）                      |
+| `OPENROUTER_`        | OpenRouter                               |
+| `GROK_`              | xAI Grok                                 |
+| `TENCENT_`           | Tencent Hunyuan                          |
+| `TENCENT_HUNYUAN_`   | Tencent Hunyuan（別名）                  |
+| `XIAOMI_`            | Xiaomi MiMo                              |
+| `MIMO_`              | Xiaomi MiMo（別名）                      |
+| `OLLAMA_`            | Ollama（本機）                           |
+| `LEMONADE_`          | Lemonade（本機）                         |
 
 Azure OpenAI 使用 deployment name 作為模型 ID：
 
@@ -203,7 +202,7 @@ ACCESS_CODE=your-secret-code
 伺服器端 API 沒有收到用戶端模型時，需要透過 `DEFAULT_MODEL` 指定預設模型。模型寫法是 `provider:model-id`，例如：
 
 ```bash
-DEFAULT_MODEL=openai:gpt-5.5
+DEFAULT_MODEL=openai:qwen3.7-plus
 ```
 
 可以使用 `MODEL_ROUTES` 為不同生成階段指定模型；未設定的階段仍依用戶端模型和 `DEFAULT_MODEL` 解析。它是一個 JSON 物件，鍵為生成階段，值可以是模型字串，也可以是包含 `model` 和 `thinking` 的物件。完整的階段清單和範例請見儲存庫中的 [`.env.example`](https://github.com/THU-MAIC/OpenMAIC/blob/main/.env.example)。
@@ -264,9 +263,9 @@ providers:
     apiKey: sk-...
     baseUrl: https://api.openai.com/v1
     models:
-      - gpt-5.5
-  anthropic:
-    apiKey: sk-ant-...
+      - qwen3.7-plus
+  deepseek:
+    apiKey: sk-...
 
 tts:
   doubao-tts:

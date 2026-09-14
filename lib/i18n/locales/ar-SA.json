@@ -1231,9 +1231,6 @@
     "providerNames": {
       "openai": "OpenAI",
       "azure": "Azure OpenAI",
-      "anthropic": "Claude",
-      "google": "Gemini",
-      "bedrock": "Amazon Bedrock",
       "deepseek": "DeepSeek",
       "qwen": "Qwen",
       "kimi": "Kimi",
@@ -1257,10 +1254,7 @@
     },
     "providerTypes": {
       "openai": "بروتوكول OpenAI",
-      "azure": "Azure OpenAI",
-      "anthropic": "بروتوكول Claude",
-      "google": "بروتوكول Gemini",
-      "bedrock": "Amazon Bedrock"
+      "azure": "Azure OpenAI"
     },
     "modelCount": "نماذج",
     "modelSingular": "نموذج",
@@ -1315,9 +1309,6 @@
     "providerNamePlaceholder": "مثلاً: بروكسي OpenAI الخاص بي",
     "providerNameRequired": "يرجى إدخال اسم المزوّد",
     "providerApiMode": "وضع API",
-    "apiModeOpenAI": "بروتوكول OpenAI",
-    "apiModeAnthropic": "بروتوكول Claude",
-    "apiModeGoogle": "بروتوكول Gemini",
     "defaultBaseUrl": "العنوان الأساسي الافتراضي",
     "providerIcon": "رابط أيقونة المزوّد",
     "requiresApiKey": "يتطلب مفتاح API",

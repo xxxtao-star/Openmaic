@@ -20,7 +20,7 @@
   <a href="https://jcst.ict.ac.cn/en/article/doi/10.1007/s11390-025-6000-0"><img src="https://img.shields.io/badge/Paper-JCST'26-blue?style=flat-square" alt="Paper"/></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="License: MIT"/></a>
   <a href="https://open.maic.chat/"><img src="https://img.shields.io/badge/Demo-Live-brightgreen?style=flat-square" alt="Live Demo"/></a>
-  <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC&envDescription=Configure%20at%20least%20one%20LLM%20provider%20API%20key%20(e.g.%20OPENAI_API_KEY%2C%20ANTHROPIC_API_KEY).%20All%20providers%20are%20optional.&envLink=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC%2Fblob%2Fmain%2F.env.example&project-name=openmaic&framework=nextjs"><img src="https://vercel.com/button" alt="Deploy with Vercel" height="20"/></a>
+  <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC&envDescription=Configure%20at%20least%20one%20LLM%20provider%20API%20key%20(e.g.%20OPENAI_API_KEY%2C%20DEEPSEEK_API_KEY).%20All%20providers%20are%20optional.&envLink=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC%2Fblob%2Fmain%2F.env.example&project-name=openmaic&framework=nextjs"><img src="https://vercel.com/button" alt="Deploy with Vercel" height="20"/></a>
   <a href="#-agent-workbench-integration"><img src="https://img.shields.io/badge/OpenClaw-Integration-F4511E?style=flat-square" alt="OpenClaw Integration"/></a>
   <a href="#lemonade-local-ai"><img src="https://img.shields.io/badge/Lemonade-Local_AI-FFD43B?style=flat-square" alt="Lemonade Local AI"/></a>
   <a href="https://github.com/THU-MAIC/OpenMAIC/stargazers"><img src="https://img.shields.io/github/stars/THU-MAIC/OpenMAIC?style=flat-square" alt="Stars"/></a>
@@ -129,14 +129,19 @@ OPENAI_API_KEY=sk-...
 AZURE_OPENAI_API_KEY=...
 AZURE_OPENAI_BASE_URL=https://YOUR-RESOURCE.openai.azure.com/openai
 AZURE_OPENAI_MODELS=YOUR-DEPLOYMENT-NAME
-ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_API_KEY=...
+DEEPSEEK_API_KEY=...
+QWEN_API_KEY=...
+KIMI_API_KEY=...
+GLM_API_KEY=...
+MINIMAX_API_KEY=...
 GROK_API_KEY=xai-...
 OPENROUTER_API_KEY=sk-or-...
+DOUBAO_API_KEY=...
 TENCENT_API_KEY=sk-...
 XIAOMI_API_KEY=...
-# Or configure Amazon Bedrock with AWS credentials and BEDROCK_REGION.
 ```
+
+`OPENAI_API_KEY` is the generic OpenAI-compatible channel: it serves the built-in domestic catalogue (Qwen, DeepSeek, GLM, Kimi) out of the box. Point `OPENAI_BASE_URL` at a relay or gateway to serve it from there, or use `OPENAI_MODELS` to narrow it.
 
 You can also configure providers via `server-providers.yml`:
 
@@ -149,25 +154,20 @@ providers:
     baseUrl: https://YOUR-RESOURCE.openai.azure.com/openai
     models:
       - YOUR-DEPLOYMENT-NAME
-  anthropic:
-    apiKey: sk-ant-...
-  bedrock:
-    models:
-      - us.anthropic.claude-sonnet-5
-      - us.anthropic.claude-opus-4-8
+  deepseek:
+    apiKey: sk-...
+  atlascloud:
+    apiKey: ...
 ```
 
-Supported providers: **OpenAI**, **Azure OpenAI**, **Anthropic**, **Amazon Bedrock**, **Google Gemini**, **DeepSeek**, **Qwen**, **Kimi**, **MiniMax**, **Grok (xAI)**, **OpenRouter**, **Doubao**, **Tencent Hunyuan/TokenHub**, **Xiaomi MiMo**, **GLM (Zhipu)**, **Ollama** (local), **Lemonade** (local LLM / image / TTS / ASR), **FunASR** (local ASR), and any OpenAI-compatible API.
+Supported providers: **OpenAI-compatible** (the built-in domestic catalogue), **Azure OpenAI**, **AtlasCloud**, **DeepSeek**, **Qwen**, **Kimi**, **MiniMax**, **Grok (xAI)**, **OpenRouter**, **Doubao**, **Tencent Hunyuan/TokenHub**, **Xiaomi MiMo**, **GLM (Zhipu)**, **SiliconFlow**, **Ollama** (local), **Lemonade** (local LLM / image / TTS / ASR), **FunASR** (local ASR), and any OpenAI-compatible API.
 
-Amazon Bedrock quick example:
+OpenAI-compatible channel quick example:
 
 ```env
-BEDROCK_REGION=us-east-1
-BEDROCK_MODELS=us.anthropic.claude-sonnet-5,us.anthropic.claude-opus-4-8
-DEFAULT_MODEL=bedrock:us.anthropic.claude-sonnet-5
+OPENAI_API_KEY=sk-...
+DEFAULT_MODEL=openai:qwen3.7-plus
 ```
-
-Bedrock uses AWS environment credentials or the AWS SDK credential provider chain. For temporary credentials, set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN`, or use an AWS profile / role available to the runtime.
 
 <a id="lemonade-local-ai"></a>
 
@@ -212,11 +212,11 @@ OpenMAIC can extract timestamped transcripts and prepared video keyframes locall
 
 If the executables are unavailable, the local extractor is skipped. A configured AliDocMind provider remains available as the cloud extraction path. When neither local ffmpeg extraction nor AliDocMind is available, audio/video materials are marked failed with an actionable setup message instead of hanging or completing with an empty transcript.
 
-OpenAI quick example:
+OpenAI-compatible channel quick example:
 
 ```env
 OPENAI_API_KEY=sk-...
-DEFAULT_MODEL=openai:gpt-5.5
+DEFAULT_MODEL=openai:qwen3.7-plus
 ```
 
 MiniMax quick examples:
@@ -263,9 +263,9 @@ GLM_BASE_URL=https://api.z.ai/api/paas/v4
 DEFAULT_MODEL=glm:glm-5.1
 ```
 
-> **Recommended model:** **Gemini 3 Flash** — best balance of quality and speed. For highest quality (at slower speed), try **Gemini 3.1 Pro**.
+> **Recommended model:** **Qwen3.7 Plus** — best balance of quality and speed across the built-in catalogue. For highest quality (at slower speed), try **DeepSeek V4 Pro**.
 >
-> If you want OpenMAIC server APIs to use Gemini by default, also set `DEFAULT_MODEL=google:gemini-3-flash-preview`.
+> If you want OpenMAIC server APIs to use a specific model by default, also set `DEFAULT_MODEL=openai:qwen3.7-plus`.
 >
 > If you want to use MiniMax as the default server model, set `DEFAULT_MODEL=minimax:MiniMax-M2.7-highspeed`.
 
@@ -295,7 +295,7 @@ When set, visitors see a password prompt before accessing the app. All API route
 
 ### Vercel Deployment
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC&envDescription=Configure%20at%20least%20one%20LLM%20provider%20API%20key%20(e.g.%20OPENAI_API_KEY%2C%20ANTHROPIC_API_KEY).%20All%20providers%20are%20optional.&envLink=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC%2Fblob%2Fmain%2F.env.example&project-name=openmaic&framework=nextjs)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC&envDescription=Configure%20at%20least%20one%20LLM%20provider%20API%20key%20(e.g.%20OPENAI_API_KEY%2C%20DEEPSEEK_API_KEY).%20All%20providers%20are%20optional.&envLink=https%3A%2F%2Fgithub.com%2FTHU-MAIC%2FOpenMAIC%2Fblob%2Fmain%2F.env.example&project-name=openmaic&framework=nextjs)
 
 Or manually:
 
@@ -446,7 +446,7 @@ with the same PostgreSQL connection used by server-backed persistence:
 NEXT_PUBLIC_PRO_WORKBENCH_ENABLED=true
 OPENMAIC_AGENT_RUNTIME_ENABLED=true
 DATABASE_URL=postgres://openmaic:openmaic-dev@postgres:5432/openmaic
-MODEL_ROUTES='{"maic-agent-driver":{"model":"openai:gpt-5.5","api":"openai-completions"}}'
+MODEL_ROUTES='{"maic-agent-driver":{"model":"openai:qwen3.7-plus","api":"openai-completions"}}'
 ```
 
 While the flag is off, the `/api/agent/sessions*` and `/api/agent/owner-events`

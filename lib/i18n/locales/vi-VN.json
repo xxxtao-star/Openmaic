@@ -1231,9 +1231,6 @@
     "providerNames": {
       "openai": "OpenAI",
       "azure": "Azure OpenAI",
-      "anthropic": "Claude",
-      "google": "Gemini",
-      "bedrock": "Amazon Bedrock",
       "deepseek": "DeepSeek",
       "qwen": "Qwen",
       "kimi": "Kimi",
@@ -1257,10 +1254,7 @@
     },
     "providerTypes": {
       "openai": "Giao thức OpenAI",
-      "azure": "Azure OpenAI",
-      "anthropic": "Giao thức Claude",
-      "google": "Giao thức Gemini",
-      "bedrock": "Amazon Bedrock"
+      "azure": "Azure OpenAI"
     },
     "modelCount": "model",
     "modelSingular": "mô hình",
@@ -1315,9 +1309,6 @@
     "providerNamePlaceholder": "ví dụ: Proxy OpenAI của tôi",
     "providerNameRequired": "Vui lòng nhập tên nhà cung cấp",
     "providerApiMode": "Giao thức API",
-    "apiModeOpenAI": "Giao thức OpenAI",
-    "apiModeAnthropic": "Giao thức Claude",
-    "apiModeGoogle": "Giao thức Gemini",
     "defaultBaseUrl": "Địa chỉ gốc mặc định",
     "providerIcon": "URL biểu tượng nhà cung cấp",
     "requiresApiKey": "Cần khóa API",

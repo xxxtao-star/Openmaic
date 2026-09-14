@@ -3,7 +3,6 @@ import type {
   ProviderId,
   ThinkingCapability,
   ThinkingEffort,
-  ThinkingLevel,
   ThinkingRequestAdapter,
 } from '@/lib/types/provider';
 import { getCanonicalModelId } from './model-aliases';
@@ -26,22 +25,6 @@ function effortCapability(
     toggleable: effortValues.includes('none'),
     budgetAdjustable: true,
     defaultEnabled: !effortValues.includes('none'),
-  };
-}
-
-function levelCapability(
-  levelValues: ThinkingLevel[],
-  defaultLevel: ThinkingLevel,
-): ThinkingCapability {
-  return {
-    control: 'level',
-    requestAdapter: 'google',
-    levelValues,
-    defaultLevel,
-    defaultMode: 'enabled',
-    toggleable: false,
-    budgetAdjustable: true,
-    defaultEnabled: true,
   };
 }
 
@@ -101,62 +84,6 @@ const fixedThinkingCapability: ThinkingCapability = {
   toggleable: false,
   budgetAdjustable: false,
   defaultEnabled: true,
-};
-
-const anthropicManualBudgetByEffort: Partial<Record<ThinkingEffort, number>> = {
-  low: 4096,
-  medium: 10240,
-  high: 32768,
-  max: 64000,
-};
-
-const anthropicManualEffort: ThinkingCapability = {
-  control: 'effort',
-  requestAdapter: 'anthropic',
-  effortValues: ['none', 'low', 'medium', 'high', 'max'],
-  defaultEffort: 'medium',
-  defaultMode: 'enabled',
-  toggleable: true,
-  budgetAdjustable: true,
-  defaultEnabled: true,
-  anthropicThinking: {
-    type: 'enabled',
-    budgetByEffort: anthropicManualBudgetByEffort,
-  },
-};
-
-const anthropicAdaptiveEffort: ThinkingCapability = {
-  ...anthropicManualEffort,
-  anthropicThinking: { type: 'adaptive' },
-};
-
-const anthropicBudget: ThinkingCapability = toggleBudgetCapability(
-  'anthropic',
-  { min: 1024, max: 64000, step: 1024 },
-  false,
-  1024,
-);
-
-const anthropicOpus47Effort: ThinkingCapability = {
-  ...anthropicAdaptiveEffort,
-  effortValues: ['none', 'low', 'medium', 'high', 'xhigh', 'max'],
-};
-
-const anthropicClaude5Effort: ThinkingCapability = {
-  ...anthropicOpus47Effort,
-  defaultEffort: 'high',
-  defaultMode: 'enabled',
-  defaultEnabled: true,
-};
-
-// Fable 5 always uses adaptive thinking. The API rejects both disabled thinking
-// and budget_tokens, so reasoning depth is controlled by effort only.
-const anthropicFable5Effort: ThinkingCapability = {
-  ...anthropicOpus47Effort,
-  effortValues: ['low', 'medium', 'high', 'xhigh', 'max'],
-  defaultEffort: 'high',
-  toggleable: false,
-  budgetAdjustable: false,
 };
 
 const kimiK3Effort = effortCapability('openai', ['low', 'high', 'max'], 'max');
@@ -263,94 +190,40 @@ const doubaoSeed20Effort: ThinkingCapability = {
 
 const minimaxM3Thinking = toggleCapability('anthropic', false);
 
-const openaiGpt56Effort: ThinkingCapability = {
-  control: 'effort',
-  requestAdapter: 'openai',
-  effortValues: ['none', 'low', 'medium', 'high', 'xhigh', 'max'],
-  defaultEffort: 'medium',
-  defaultMode: 'enabled',
-  toggleable: true,
-  budgetAdjustable: true,
-  defaultEnabled: true,
-};
-
 const THINKING_CAPABILITIES: Record<string, ThinkingCapability> = {
-  [getModelMetadataKey('openai', 'gpt-5.6')]: openaiGpt56Effort,
-  [getModelMetadataKey('openai', 'gpt-5.6-terra')]: openaiGpt56Effort,
-  [getModelMetadataKey('openai', 'gpt-5.6-luna')]: openaiGpt56Effort,
-  [getModelMetadataKey('openai', 'gpt-5.5')]: effortCapability(
-    'openai',
-    ['low', 'medium', 'high', 'xhigh'],
-    'medium',
-  ),
-  [getModelMetadataKey('openai', 'gpt-5.4-pro')]: effortCapability(
-    'openai',
-    ['medium', 'high', 'xhigh'],
-    'medium',
-  ),
-  [getModelMetadataKey('openai', 'gpt-5.4')]: effortCapability(
-    'openai',
-    ['none', 'low', 'medium', 'high', 'xhigh'],
-    'none',
-  ),
-  [getModelMetadataKey('openai', 'gpt-5.4-mini')]: effortCapability(
-    'openai',
-    ['none', 'low', 'medium', 'high', 'xhigh'],
-    'none',
-  ),
-  [getModelMetadataKey('openai', 'gpt-5.4-nano')]: effortCapability(
-    'openai',
-    ['none', 'low', 'medium', 'high', 'xhigh'],
-    'none',
-  ),
+  // Domestic (国模) models served through the shared `openai` channel. The
+  // transport is the vendor's own OpenAI-compatible protocol, so each one
+  // reuses the capability of its native provider block below — without an
+  // explicit entry here the shared slot would leave them with no thinking
+  // control at all, since getCatalogThinkingCapability has no generic fallback.
+  [getModelMetadataKey('openai', 'qwen3.7-plus')]: qwenBudgetEnabled,
+  [getModelMetadataKey('openai', 'qwen3.7-max')]: qwenBudgetEnabled,
+  [getModelMetadataKey('openai', 'qwen3.6-max-preview')]: qwenBudgetDisabled,
+  [getModelMetadataKey('openai', 'qwen3.6-plus')]: qwenBudgetEnabled,
+  [getModelMetadataKey('openai', 'qwen3.6-flash')]: qwenBudgetEnabled,
+  [getModelMetadataKey('openai', 'qwen3-max')]: qwenBudgetDisabled,
+  [getModelMetadataKey('openai', 'qwen3-vl-plus')]: qwenBudgetDisabled,
 
-  [getModelMetadataKey('anthropic', 'claude-fable-5')]: anthropicFable5Effort,
-  [getModelMetadataKey('anthropic', 'claude-opus-5')]: anthropicClaude5Effort,
-  [getModelMetadataKey('anthropic', 'claude-sonnet-5')]: anthropicClaude5Effort,
-  [getModelMetadataKey('anthropic', 'claude-opus-4-8')]: anthropicOpus47Effort,
-  [getModelMetadataKey('anthropic', 'claude-opus-4-7')]: anthropicOpus47Effort,
-  [getModelMetadataKey('anthropic', 'claude-opus-4-6')]: anthropicAdaptiveEffort,
-  [getModelMetadataKey('anthropic', 'claude-sonnet-4-6')]: anthropicAdaptiveEffort,
-  [getModelMetadataKey('anthropic', 'claude-sonnet-4-5')]: anthropicManualEffort,
-  [getModelMetadataKey('anthropic', 'claude-haiku-4-5')]: anthropicBudget,
+  [getModelMetadataKey('openai', 'deepseek-v4-pro')]: deepseekEffort,
+  [getModelMetadataKey('openai', 'deepseek-v4-flash')]: deepseekEffort,
+  [getModelMetadataKey('openai', 'deepseek-v4-flash-vision-exp')]: deepseekEffort,
 
-  [getModelMetadataKey('google', 'gemini-3.6-flash')]: levelCapability(
-    ['minimal', 'low', 'medium', 'high'],
-    'medium',
-  ),
-  [getModelMetadataKey('google', 'gemini-3.5-flash-lite')]: levelCapability(
-    ['minimal', 'low', 'medium', 'high'],
-    'minimal',
-  ),
-  [getModelMetadataKey('google', 'gemini-3.5-flash')]: levelCapability(
-    ['minimal', 'low', 'medium', 'high'],
-    'medium',
-  ),
-  [getModelMetadataKey('google', 'gemini-3.1-pro-preview')]: levelCapability(
-    ['minimal', 'low', 'medium', 'high'],
-    'high',
-  ),
-  [getModelMetadataKey('google', 'gemini-3-flash-preview')]: levelCapability(
-    ['minimal', 'low', 'medium', 'high'],
-    'high',
-  ),
-  [getModelMetadataKey('google', 'gemini-2.5-flash')]: toggleBudgetCapability(
-    'google',
-    { min: 0, max: 24576, step: 1024, allowDynamic: true, disableValue: 0 },
-    true,
-    -1,
-  ),
-  [getModelMetadataKey('google', 'gemini-2.5-flash-lite')]: toggleBudgetCapability(
-    'google',
-    { min: 0, max: 24576, step: 1024, allowDynamic: true, disableValue: 0 },
-    false,
-    0,
-  ),
-  [getModelMetadataKey('google', 'gemini-2.5-pro')]: budgetOnlyCapability(
-    'google',
-    { min: 128, max: 32768, step: 1024, allowDynamic: true },
-    -1,
-  ),
+  [getModelMetadataKey('openai', 'glm-5.3')]: glm53Effort,
+  [getModelMetadataKey('openai', 'glm-5.3-flash')]: glm53Effort,
+  [getModelMetadataKey('openai', 'glm-5.2')]: glm52Effort,
+  [getModelMetadataKey('openai', 'glm-5.1')]: toggleCapability('glm'),
+  [getModelMetadataKey('openai', 'glm-5v-turbo')]: toggleCapability('glm'),
+  [getModelMetadataKey('openai', 'glm-5')]: toggleCapability('glm'),
+  [getModelMetadataKey('openai', 'glm-4.7')]: toggleCapability('glm'),
+  [getModelMetadataKey('openai', 'glm-4.6')]: toggleCapability('glm'),
+  [getModelMetadataKey('openai', 'glm-4.6v')]: toggleCapability('glm'),
+
+  [getModelMetadataKey('openai', 'kimi-k3')]: kimiK3Effort,
+  [getModelMetadataKey('openai', 'kimi-k2.7-code')]: fixedThinkingCapability,
+  [getModelMetadataKey('openai', 'kimi-k2.7-code-highspeed')]: fixedThinkingCapability,
+  [getModelMetadataKey('openai', 'kimi-k2.6')]: toggleCapability('kimi'),
+  [getModelMetadataKey('openai', 'kimi-k2.5')]: toggleCapability('kimi'),
+  [getModelMetadataKey('openai', 'kimi-k2-thinking')]: toggleCapability('kimi'),
 
   [getModelMetadataKey('glm', 'glm-5.3')]: glm53Effort,
   [getModelMetadataKey('glm', 'glm-5.3-flash')]: glm53Effort,

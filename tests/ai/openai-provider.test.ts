@@ -19,7 +19,7 @@ vi.mock('@ai-sdk/azure', () => ({
   createAzure: azureMock.createAzure,
 }));
 
-import { getModel, getModelInfo, getProvider, LLM_FETCH_TIMEOUT_MS } from '@/lib/ai/providers';
+import { getModel, getModelInfo, getProvider, LLM_FETCH_TIMEOUT_MS, PROVIDERS } from '@/lib/ai/providers';
 import { normalizeAzureBaseUrl } from '@/lib/ai/azure';
 import type { ProviderId } from '@/lib/types/provider';
 
@@ -95,87 +95,57 @@ describe('OpenAI provider defaults', () => {
   });
 
   it.each([
-    ['gpt-5.6', 'GPT-5.6 Sol'],
-    ['gpt-5.6-terra', 'GPT-5.6 Terra'],
-    ['gpt-5.6-luna', 'GPT-5.6 Luna'],
-  ])('includes %s as a built-in OpenAI model', (modelId, name) => {
+    ['qwen3.7-plus', 'Qwen3.7 Plus', 1000000, 64000],
+    ['deepseek-v4-pro', 'DeepSeek V4 Pro', 1048576, 393216],
+    ['glm-5.3', 'GLM-5.3', 1000000, 128000],
+  ])('includes %s as a built-in model on the domestic channel', (modelId, name, contextWindow, outputWindow) => {
     expect(getModelInfo('openai', modelId)).toMatchObject({
       id: modelId,
       name,
-      contextWindow: 1050000,
-      outputWindow: 128000,
+      contextWindow,
+      outputWindow,
       capabilities: {
         streaming: true,
         tools: true,
-        vision: true,
-        thinking: {
-          control: 'effort',
-          requestAdapter: 'openai',
-          effortValues: ['none', 'low', 'medium', 'high', 'xhigh', 'max'],
-          defaultEffort: 'medium',
-          toggleable: true,
-          budgetAdjustable: true,
-          defaultEnabled: true,
-        },
       },
     });
   });
 
-  it.each(['gpt-5.6', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'])(
-    'routes %s through the OpenAI Responses API',
-    (modelId) => {
-      const { model, modelInfo } = getModel({
+  it('serves the domestic catalog over Chat Completions, never the Responses API', () => {
+    for (const modelId of PROVIDERS.openai.models.map((model) => model.id)) {
+      openAiMock.chat.mockClear();
+      openAiMock.responses.mockClear();
+
+      const { model } = getModel({
         providerId: 'openai',
         modelId,
         apiKey: 'sk-test',
       });
 
-      expect(openAiMock.responses).toHaveBeenCalledWith(modelId);
-      expect(openAiMock.chat).not.toHaveBeenCalled();
-      expect(model).toEqual({ endpoint: 'responses', modelId });
-      expect(modelInfo).toBe(getModelInfo('openai', modelId));
-    },
-  );
-
-  it('resolves GPT-5.6 Sol model info through the canonical built-in entry', () => {
-    expect(getModelInfo('openai', 'gpt-5.6-sol')).toBe(getModelInfo('openai', 'gpt-5.6'));
+      // Vendor-native OpenAI-compatible protocols: no id in this catalog is a
+      // Responses-only model, so the heuristic must never fire for one.
+      expect(openAiMock.chat).toHaveBeenCalledWith(modelId);
+      expect(openAiMock.responses).not.toHaveBeenCalled();
+      expect(model).toEqual({ endpoint: 'chat', modelId });
+    }
   });
 
-  it('includes GPT-5.5 as a built-in OpenAI model', () => {
-    expect(getModelInfo('openai', 'gpt-5.5')).toMatchObject({
-      id: 'gpt-5.5',
-      name: 'GPT-5.5',
-      contextWindow: 1050000,
-      outputWindow: 128000,
-      capabilities: {
-        streaming: true,
-        tools: true,
-        vision: true,
-        thinking: {
-          toggleable: false,
-          budgetAdjustable: true,
-          defaultEnabled: true,
-        },
-      },
-    });
-  });
-
-  it('routes GPT-5.5 through the OpenAI Responses API', () => {
+  it('still selects the Responses API for a Responses-only id written into the config by hand', () => {
     const { model } = getModel({
       providerId: 'openai',
-      modelId: 'gpt-5.5',
+      modelId: 'gpt-5.6-codex',
       apiKey: 'sk-test',
     });
 
-    expect(openAiMock.responses).toHaveBeenCalledWith('gpt-5.5');
+    expect(openAiMock.responses).toHaveBeenCalledWith('gpt-5.6-codex');
     expect(openAiMock.chat).not.toHaveBeenCalled();
-    expect(model).toEqual({ endpoint: 'responses', modelId: 'gpt-5.5' });
+    expect(model).toEqual({ endpoint: 'responses', modelId: 'gpt-5.6-codex' });
   });
 
-  it('keeps the Responses API for a custom OpenAI base URL by default', () => {
+  it('keeps Chat Completions for a custom OpenAI base URL by default', () => {
     getModel({
       providerId: 'openai',
-      modelId: 'gpt-5.6-sol',
+      modelId: 'qwen3.7-plus',
       apiKey: 'sk-test',
       baseUrl: 'https://relay.example/v1',
     });
@@ -183,29 +153,10 @@ describe('OpenAI provider defaults', () => {
     const options = openAiMock.createOpenAI.mock.calls.at(-1)?.[0] as
       | { fetch?: typeof fetch }
       | undefined;
-    // Native transports always install the shared transport now (it carries
-    // the extended-timeout dispatcher); "no compat" is proven by the dialect
-    // assertions below.
+    // Compat gateways always install the shared transport (it carries the
+    // extended-timeout dispatcher and the thinking-budget seam).
     expect(options?.fetch).toBeTypeOf('function');
-    expect(openAiMock.responses).toHaveBeenCalledWith('gpt-5.6-sol');
-    expect(openAiMock.chat).not.toHaveBeenCalled();
-  });
-
-  it('routes a custom OpenAI base URL through Chat Completions when compatibility is enabled', () => {
-    vi.stubEnv('OPENAI_COMPAT_USE_STREAMING_CHAT', 'true');
-
-    getModel({
-      providerId: 'openai',
-      modelId: 'gpt-5.6-sol',
-      apiKey: 'sk-test',
-      baseUrl: 'https://relay.example/v1',
-    });
-
-    const options = openAiMock.createOpenAI.mock.calls.at(-1)?.[0] as
-      | { fetch?: typeof fetch }
-      | undefined;
-    expect(options?.fetch).toBeTypeOf('function');
-    expect(openAiMock.chat).toHaveBeenCalledWith('gpt-5.6-sol');
+    expect(openAiMock.chat).toHaveBeenCalledWith('qwen3.7-plus');
     expect(openAiMock.responses).not.toHaveBeenCalled();
   });
 
@@ -213,12 +164,12 @@ describe('OpenAI provider defaults', () => {
     'https://api.openai.com/v1/',
     ' https://API.openai.com/v1 ',
     'https://api.openai.com/v1?api-version=latest',
-  ])('does not enable compatibility for the official OpenAI base URL: %s', (baseUrl) => {
+  ])('does not treat the official OpenAI base URL as a compat gateway: %s', (baseUrl) => {
     vi.stubEnv('OPENAI_COMPAT_USE_STREAMING_CHAT', 'true');
 
     getModel({
       providerId: 'openai',
-      modelId: 'gpt-5.6-sol',
+      modelId: 'qwen3.7-plus',
       apiKey: 'sk-test',
       baseUrl,
     });
@@ -226,11 +177,7 @@ describe('OpenAI provider defaults', () => {
     const options = openAiMock.createOpenAI.mock.calls.at(-1)?.[0] as
       | { fetch?: typeof fetch }
       | undefined;
-    // See above: the shared transport is always installed; the dialect
-    // assertions prove the compat path was not taken.
     expect(options?.fetch).toBeTypeOf('function');
-    expect(openAiMock.responses).toHaveBeenCalledWith('gpt-5.6-sol');
-    expect(openAiMock.chat).not.toHaveBeenCalled();
   });
 
   it('buffers custom OpenAI Chat streams for non-streaming SDK calls', async () => {
@@ -241,7 +188,7 @@ describe('OpenAI provider defaults', () => {
         id: 'chatcmpl_test',
         object: 'chat.completion.chunk',
         created: 123,
-        model: 'gpt-5.6-sol',
+        model: 'qwen3.7-plus',
         choices: [
           {
             index: 0,
@@ -264,7 +211,7 @@ describe('OpenAI provider defaults', () => {
         id: 'chatcmpl_test',
         object: 'chat.completion.chunk',
         created: 123,
-        model: 'gpt-5.6-sol',
+        model: 'qwen3.7-plus',
         choices: [
           {
             index: 0,
@@ -301,7 +248,7 @@ describe('OpenAI provider defaults', () => {
       globalThis.fetch = fetchMock as typeof fetch;
       getModel({
         providerId: 'openai',
-        modelId: 'gpt-5.6-sol',
+        modelId: 'qwen3.7-plus',
         apiKey: 'sk-test',
         baseUrl: 'https://relay.example/v1',
       });
@@ -311,7 +258,7 @@ describe('OpenAI provider defaults', () => {
       const response = await options?.fetch?.('https://relay.example/v1/chat/completions', {
         method: 'POST',
         body: JSON.stringify({
-          model: 'gpt-5.6-sol',
+          model: 'qwen3.7-plus',
           messages: [],
           stream: false,
           stream_options: { include_usage: false, relay_option: 'preserve' },
@@ -353,7 +300,7 @@ describe('OpenAI provider defaults', () => {
       id: 'chatcmpl_preamble',
       object: 'chat.completion.chunk',
       created: 123,
-      model: 'gpt-5.6-sol',
+      model: 'qwen3.7-plus',
       choices: [{ index: 0, delta: { role: 'assistant', content: 'ok' } }],
     };
     const fetchMock = vi.fn(async () => {
@@ -368,7 +315,7 @@ describe('OpenAI provider defaults', () => {
       globalThis.fetch = fetchMock as typeof fetch;
       getModel({
         providerId: 'openai',
-        modelId: 'gpt-5.6-sol',
+        modelId: 'qwen3.7-plus',
         apiKey: 'sk-test',
         baseUrl: 'https://relay.example/v1',
       });
@@ -378,7 +325,7 @@ describe('OpenAI provider defaults', () => {
         | undefined;
       const response = await options?.fetch?.('https://relay.example/v1/chat/completions', {
         method: 'POST',
-        body: JSON.stringify({ model: 'gpt-5.6-sol', messages: [], stream: false }),
+        body: JSON.stringify({ model: 'qwen3.7-plus', messages: [], stream: false }),
       });
       const body = await response?.json();
 
@@ -813,7 +760,7 @@ describe('OpenAI provider defaults', () => {
     try {
       globalThis.fetch = fetchMock as typeof fetch;
 
-      getModel({ providerId: 'openai', modelId: 'gpt-5.3', apiKey: 'sk-test' });
+      getModel({ providerId: 'openai', modelId: 'qwen3.7-plus', apiKey: 'sk-test' });
       const options = openAiMock.createOpenAI.mock.calls.at(-1)?.[0] as
         | { fetch?: typeof fetch }
         | undefined;
@@ -846,7 +793,7 @@ describe('OpenAI provider defaults', () => {
     try {
       globalThis.fetch = fetchMock as typeof fetch;
 
-      getModel({ providerId: 'openai', modelId: 'gpt-5.3', apiKey: 'sk-test' });
+      getModel({ providerId: 'openai', modelId: 'qwen3.7-plus', apiKey: 'sk-test' });
       const options = openAiMock.createOpenAI.mock.calls.at(-1)?.[0] as
         | { fetch?: typeof fetch }
         | undefined;

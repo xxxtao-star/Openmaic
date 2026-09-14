@@ -88,13 +88,13 @@ describe('validateServerConfig — warning matrix', () => {
 
   it('emits no warnings on a fully valid config', async () => {
     vi.stubEnv('OPENAI_API_KEY', 'sk-test');
-    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-test');
-    vi.stubEnv('DEFAULT_MODEL', 'openai:gpt-5.4-mini');
+    vi.stubEnv('GLM_API_KEY', 'sk-test');
+    vi.stubEnv('DEFAULT_MODEL', 'openai:qwen3.7-plus');
     vi.stubEnv(
       'MODEL_ROUTES',
       JSON.stringify({
-        'scene-content': 'openai:gpt-5.4',
-        'pbl-chat': { model: 'anthropic:claude-sonnet-4', thinking: { enabled: false } },
+        'scene-content': 'openai:qwen3.7-max',
+        'pbl-chat': { model: 'glm:glm-5.3', thinking: { enabled: false } },
       }),
     );
     const { validateServerConfig } = await import('@/lib/server/config-validation');

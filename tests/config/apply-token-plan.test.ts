@@ -150,16 +150,16 @@ describe('applyTokenPlan', () => {
     expect(cfg.models[1].capabilities?.thinking).toBeDefined();
   });
 
-  it('preserves GPT-5.6 Sol catalog metadata when a plan uses the explicit model ID', () => {
+  it('preserves catalog metadata for a plan model the registry already serves', () => {
     const actions = makeActions();
     const preset: TokenPlanPreset = {
       ...deepseek,
       modalities: {
         llm: {
           providerId: 'openai',
-          baseUrl: 'https://api.openai.com/v1',
+          baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
           apiFormat: 'openai',
-          defaultModels: ['gpt-5.6-sol'],
+          defaultModels: ['qwen3.7-plus'],
         },
       },
     };
@@ -175,9 +175,9 @@ describe('applyTokenPlan', () => {
     };
 
     expect(config.models[0]).toMatchObject({
-      id: 'gpt-5.6-sol',
-      contextWindow: 1050000,
-      outputWindow: 128000,
+      id: 'qwen3.7-plus',
+      contextWindow: 1000000,
+      outputWindow: 64000,
       capabilities: { vision: true },
     });
     expect(config.models[0].capabilities?.thinking).toBeDefined();

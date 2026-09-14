@@ -4,7 +4,6 @@ import { getProvider } from '@/lib/ai/providers';
 import {
   getThinkingConfigKey,
   getDefaultThinkingConfig,
-  getThinkingDisplayValue,
   normalizeThinkingConfig,
   supportsConfigurableThinking,
 } from '@/lib/ai/thinking-config';
@@ -49,27 +48,9 @@ describe('thinking config metadata', () => {
     expect(getDefaultThinkingConfig(thinking)).toEqual({ mode: 'disabled' });
   });
 
-  it('exposes Claude Haiku 4.5 thinking as budget-only, not effort', () => {
-    const thinking = getThinking('anthropic', 'claude-haiku-4-5');
-
-    expect(supportsConfigurableThinking(thinking)).toBe(true);
-    expect(thinking?.control).toBe('toggle-budget');
-    expect(thinking?.requestAdapter).toBe('anthropic');
-    expect(thinking?.effortValues).toBeUndefined();
-    expect(getDefaultThinkingConfig(thinking)).toEqual({
-      mode: 'disabled',
-      budgetTokens: 1024,
-    });
-    expect(normalizeThinkingConfig(thinking, { mode: 'enabled', budgetTokens: 4096 })).toEqual({
-      mode: 'enabled',
-      budgetTokens: 4096,
-    });
-  });
-
   it('removes deprecated and legacy models from the built-in catalog', () => {
     const openaiModels = getProvider('openai')?.models.map((item) => item.id);
     const glmModels = getProvider('glm')?.models.map((item) => item.id);
-    const googleModels = getProvider('google')?.models.map((item) => item.id);
     const deepseekModels = getProvider('deepseek')?.models.map((item) => item.id);
     const hunyuanModels = getProvider('tencent-hunyuan')?.models.map((item) => item.id);
     const minimaxModels = getProvider('minimax')?.models.map((item) => item.id);
@@ -85,11 +66,6 @@ describe('thinking config metadata', () => {
     expect(glmModels).not.toContain('glm-4.5-air');
     expect(glmModels).not.toContain('glm-4.5-airx');
     expect(glmModels).not.toContain('glm-4.5-flash');
-    expect(googleModels).toEqual(
-      expect.arrayContaining(['gemini-3.6-flash', 'gemini-3.5-flash-lite']),
-    );
-    expect(googleModels).toContain('gemini-3.1-pro-preview');
-    expect(googleModels).not.toContain('gemini-3-pro-preview');
     expect(deepseekModels).toEqual([
       'deepseek-v4-pro',
       'deepseek-v4-flash',
@@ -112,32 +88,32 @@ describe('thinking config metadata', () => {
 });
 
 describe('thinking config normalization', () => {
-  it('shares one settings key between GPT-5.6 Sol and its alias', () => {
-    expect(getThinkingConfigKey('openai', 'gpt-5.6-sol')).toBe('openai:gpt-5.6');
-    expect(getThinkingConfigKey('openai', 'gpt-5.6')).toBe('openai:gpt-5.6');
+  it('keys settings by provider and the exact model ID, with no alias collapsing', () => {
+    expect(getThinkingConfigKey('openai', 'qwen3.7-plus')).toBe('openai:qwen3.7-plus');
+    expect(getThinkingConfigKey('openai', 'qwen3.7-max')).toBe('openai:qwen3.7-max');
   });
 
-  it('normalizes OpenAI effort defaults and selected effort values', () => {
-    const thinking = getThinking('openai', 'gpt-5.4');
+  it('normalizes OpenAI-channel budget defaults and selected values', () => {
+    const thinking = getThinking('openai', 'qwen3.7-plus');
 
-    expect(getDefaultThinkingConfig(thinking)).toEqual({
-      mode: 'disabled',
-      effort: 'none',
-    });
-    expect(normalizeThinkingConfig(thinking, { effort: 'high' })).toEqual({
+    // The declared range bounds the control; the default stays unset until the
+    // user picks a value, so thinking works with or without a budget.
+    expect(thinking?.budgetRange).toEqual({ min: 0, max: 81920, step: 1024, disableValue: 0 });
+    expect(getDefaultThinkingConfig(thinking)).toEqual({ mode: 'enabled' });
+    expect(normalizeThinkingConfig(thinking, { budgetTokens: 8192 })).toEqual({
       mode: 'enabled',
-      effort: 'high',
+      budgetTokens: 8192,
     });
   });
 
-  it.each(['gpt-5.6', 'gpt-5.6-terra', 'gpt-5.6-luna'])(
-    'normalizes %s with medium default and max effort',
+  it.each(['deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-v4-flash-vision-exp'])(
+    'normalizes %s with a high default and max effort',
     (modelId) => {
       const thinking = getThinking('openai', modelId);
 
       expect(getDefaultThinkingConfig(thinking)).toEqual({
         mode: 'enabled',
-        effort: 'medium',
+        effort: 'high',
       });
       expect(normalizeThinkingConfig(thinking, { mode: 'disabled' })).toEqual({
         mode: 'disabled',
@@ -147,88 +123,28 @@ describe('thinking config normalization', () => {
         mode: 'enabled',
         effort: 'max',
       });
-      expect(thinking?.effortValues).toEqual(['none', 'low', 'medium', 'high', 'xhigh', 'max']);
+      expect(thinking?.effortValues).toEqual(['none', 'high', 'max']);
     },
   );
 
-  it('normalizes GPT-5.5 as non-toggleable effort levels', () => {
-    const thinking = getThinking('openai', 'gpt-5.5');
+  it('normalizes GLM-5.3 as non-toggleable effort levels', () => {
+    const thinking = getThinking('openai', 'glm-5.3');
 
     expect(getDefaultThinkingConfig(thinking)).toEqual({
-      mode: 'enabled',
-      effort: 'medium',
-    });
-    expect(normalizeThinkingConfig(thinking, { mode: 'disabled' })).toEqual({
-      mode: 'enabled',
-      effort: 'low',
-    });
-    expect(thinking?.effortValues).toEqual(['low', 'medium', 'high', 'xhigh']);
-  });
-
-  it('normalizes Claude 4.5+ thinking as effort levels', () => {
-    const thinking = getThinking('anthropic', 'claude-sonnet-4-6');
-    const opus48Thinking = getThinking('anthropic', 'claude-opus-4-8');
-    const opus47Thinking = getThinking('anthropic', 'claude-opus-4-7');
-
-    expect(getDefaultThinkingConfig(thinking)).toEqual({
-      mode: 'enabled',
-      effort: 'medium',
-    });
-    expect(normalizeThinkingConfig(thinking, { effort: 'max' })).toEqual({
       mode: 'enabled',
       effort: 'max',
     });
     expect(normalizeThinkingConfig(thinking, { mode: 'disabled' })).toEqual({
-      mode: 'disabled',
-      effort: 'none',
-    });
-    expect(opus48Thinking?.effortValues).toEqual(['none', 'low', 'medium', 'high', 'xhigh', 'max']);
-    expect(opus47Thinking?.effortValues).toEqual(['none', 'low', 'medium', 'high', 'xhigh', 'max']);
-  });
-
-  it('models Claude 5 defaults and Fable always-on thinking', () => {
-    const fableThinking = getThinking('anthropic', 'claude-fable-5');
-    const opusThinking = getThinking('anthropic', 'claude-opus-5');
-    const sonnetThinking = getThinking('anthropic', 'claude-sonnet-5');
-
-    expect(getDefaultThinkingConfig(fableThinking)).toEqual({
-      mode: 'enabled',
-      effort: 'high',
-    });
-    expect(normalizeThinkingConfig(fableThinking, { mode: 'disabled' })).toEqual({
       mode: 'enabled',
       effort: 'low',
     });
-    expect(fableThinking).toMatchObject({
-      toggleable: false,
-      budgetAdjustable: false,
-    });
-    expect(getDefaultThinkingConfig(opusThinking)).toEqual({
-      mode: 'enabled',
-      effort: 'high',
-    });
-    expect(getDefaultThinkingConfig(sonnetThinking)).toEqual({
-      mode: 'enabled',
-      effort: 'high',
-    });
-    expect(opusThinking?.effortValues).toEqual(['none', 'low', 'medium', 'high', 'xhigh', 'max']);
-    expect(sonnetThinking?.effortValues).toEqual(['none', 'low', 'medium', 'high', 'xhigh', 'max']);
+    expect(thinking?.effortValues).toEqual(['low', 'high', 'max']);
   });
 
-  it('models the latest Gemini, Kimi, and Grok reasoning controls', () => {
-    const geminiFlashThinking = getThinking('google', 'gemini-3.6-flash');
-    const geminiLiteThinking = getThinking('google', 'gemini-3.5-flash-lite');
+  it('models the latest Kimi and Grok reasoning controls', () => {
     const kimiThinking = getThinking('kimi', 'kimi-k3');
     const grokThinking = getThinking('grok', 'grok-4.5');
 
-    expect(getDefaultThinkingConfig(geminiFlashThinking)).toEqual({
-      mode: 'enabled',
-      level: 'medium',
-    });
-    expect(getDefaultThinkingConfig(geminiLiteThinking)).toEqual({
-      mode: 'enabled',
-      level: 'minimal',
-    });
     expect(getDefaultThinkingConfig(kimiThinking)).toEqual({
       mode: 'enabled',
       effort: 'max',
@@ -382,16 +298,5 @@ describe('thinking config normalization', () => {
       mode: 'disabled',
     });
     expect(thinking?.control).toBe('toggle');
-  });
-
-  it('preserves dynamic Gemini budgets and display labels', () => {
-    const thinking = getThinking('google', 'gemini-2.5-flash');
-
-    expect(getDefaultThinkingConfig(thinking)).toEqual({
-      mode: 'enabled',
-      budgetTokens: -1,
-    });
-    expect(getThinkingDisplayValue(thinking, undefined)).toBe('auto');
-    expect(getThinkingDisplayValue(thinking, { mode: 'enabled', budgetTokens: 8192 })).toBe('8192');
   });
 });

@@ -335,17 +335,22 @@ describe('the detail view', () => {
 describe('the settings surface mounts the section', () => {
   const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
 
-  it('adds skills to the SettingsSection union', () => {
+  it('keeps the skill section reachable by the section union', () => {
     const types = read('lib/types/settings.ts');
     expect(types).toContain("| 'skills'");
   });
 
-  it('renders SkillSettings when the skills section is active', () => {
+  it('leaves the settings dialog dedicated to the model channel', () => {
     const dialog = read('components/settings/index.tsx');
-    expect(dialog).toContain("import { SkillSettings } from './skill-settings'");
-    expect(dialog).toContain("{activeSection === 'skills' && <SkillSettings />}");
-    expect(dialog).toContain("setActiveSection('skills')");
-    expect(dialog).toContain("t('settings.skills.nav')");
-    expect(dialog).toContain("t('settings.skills.title')");
+    // The dialog dropped its section sidebar: skills are no longer a pane
+    // inside it, and nothing in the file should still branch on a section.
+    expect(dialog).not.toContain('SkillSettings');
+    expect(dialog).not.toContain('activeSection');
+    expect(dialog).toContain('<ProviderConfigPanel');
+  });
+
+  it('exports SkillSettings as a standalone surface', () => {
+    const skills = read('components/settings/skill-settings.tsx');
+    expect(skills).toContain('export function SkillSettings');
   });
 });

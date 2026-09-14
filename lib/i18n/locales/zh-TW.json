@@ -1216,9 +1216,6 @@
     "providerNames": {
       "openai": "OpenAI",
       "azure": "Azure OpenAI",
-      "anthropic": "Claude",
-      "google": "Gemini",
-      "bedrock": "Amazon Bedrock",
       "deepseek": "DeepSeek",
       "qwen": "通義千問",
       "kimi": "Kimi",
@@ -1242,10 +1239,7 @@
     },
     "providerTypes": {
       "openai": "OpenAI 協定",
-      "azure": "Azure OpenAI",
-      "anthropic": "Claude 協定",
-      "google": "Gemini 協定",
-      "bedrock": "Amazon Bedrock"
+      "azure": "Azure OpenAI"
     },
     "modelCount": "個模型",
     "modelSingular": "個模型",
@@ -1300,9 +1294,6 @@
     "providerNamePlaceholder": "例如：我的OpenAI代理",
     "providerNameRequired": "請輸入供應商名稱",
     "providerApiMode": "API 模式",
-    "apiModeOpenAI": "OpenAI 協定",
-    "apiModeAnthropic": "Claude 協定",
-    "apiModeGoogle": "Gemini 協定",
     "defaultBaseUrl": "預設 Base URL",
     "providerIcon": "Provider 圖示 URL",
     "requiresApiKey": "需要 API 密鑰",

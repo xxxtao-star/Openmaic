@@ -12,8 +12,8 @@
  * (mode/effort/level/enabled/budgetTokens/excludeReasoningOutput) — normalized
  * per the model's capability by callLLM. e.g.
  *
- *   DEFAULT_MODEL=openai:gpt-5.4-mini
- *   MODEL_ROUTES='{"scene-content":"openai:gpt-5.4","pbl-chat":{"model":"anthropic:claude-sonnet-4","thinking":{"enabled":false}},"pbl-v2-runtime":"deepseek:deepseek-v4-pro"}'
+ *   DEFAULT_MODEL=openai:qwen3.7-plus
+ *   MODEL_ROUTES='{"scene-content":"openai:qwen3.7-max","pbl-chat":{"model":"glm:glm-5.3","thinking":{"enabled":false}},"pbl-v2-runtime":"deepseek:deepseek-v4-pro"}'
  *
  * Only the *routable* stages below are valid keys — each is backed by a real
  * `resolveModel` call site. Downstream sub-calls (e.g. `pbl-generate`,

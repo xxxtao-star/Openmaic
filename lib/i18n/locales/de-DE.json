@@ -1231,9 +1231,6 @@
     "providerNames": {
       "openai": "OpenAI",
       "azure": "Azure OpenAI",
-      "anthropic": "Claude",
-      "google": "Gemini",
-      "bedrock": "Amazon Bedrock",
       "deepseek": "DeepSeek",
       "qwen": "Qwen",
       "kimi": "Kimi",
@@ -1257,10 +1254,7 @@
     },
     "providerTypes": {
       "openai": "OpenAI-Protokoll",
-      "azure": "Azure OpenAI",
-      "anthropic": "Claude-Protokoll",
-      "google": "Gemini-Protokoll",
-      "bedrock": "Amazon Bedrock"
+      "azure": "Azure OpenAI"
     },
     "modelCount": "Modelle",
     "modelSingular": "Modell",
@@ -1315,9 +1309,6 @@
     "providerNamePlaceholder": "z. B. Mein OpenAI-Proxy",
     "providerNameRequired": "Gib bitte einen Anbieternamen ein",
     "providerApiMode": "API-Modus",
-    "apiModeOpenAI": "OpenAI-Protokoll",
-    "apiModeAnthropic": "Claude-Protokoll",
-    "apiModeGoogle": "Gemini-Protokoll",
     "defaultBaseUrl": "Standard-Basis-URL",
     "providerIcon": "URL des Anbieter-Icons",
     "requiresApiKey": "API-Schlüssel erforderlich",

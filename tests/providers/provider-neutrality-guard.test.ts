@@ -95,20 +95,6 @@ const PROVIDER_NEUTRAL_FILES = [
  */
 const TEMPORARY_ALLOWLIST: readonly AllowedLeak[] = [
   {
-    file: 'lib/server/resolve-model.ts',
-    vendor: 'bedrock',
-    token: "'bedrock'",
-    count: 2,
-    reason: 'Temporary: server-managed credential policy is still encoded in model resolution.',
-  },
-  {
-    file: 'lib/server/resolve-model.ts',
-    vendor: 'bedrock',
-    token: "'Amazon Bedrock must be enabled by the server operator before it can be used.'",
-    count: 1,
-    reason: 'Temporary: the matching provider-specific policy error has not moved to an adapter.',
-  },
-  {
     file: 'app/api/generate/voice/route.ts',
     vendor: 'qwen',
     token: 'resolveQwenVoiceCloneModel',
@@ -170,8 +156,6 @@ const TEMPORARY_VENDOR_DEBT: readonly AllowedVendorDebt[] = [
       ['openai', 23],
       ['azure', 6],
       ['atlascloud', 2],
-      ['anthropic', 2],
-      ['google', 2],
       ['deepseek', 2],
       ['kimi', 2],
       ['minimax', 13],
@@ -185,7 +169,6 @@ const TEMPORARY_VENDOR_DEBT: readonly AllowedVendorDebt[] = [
       ['xiaomi', 3],
       ['ollama', 3],
       ['lemonade', 12],
-      ['bedrock', 29],
       ['voxcpm', 3],
       ['elevenlabs', 2],
       ['whisper', 1],
@@ -295,7 +278,6 @@ const TEMPORARY_VENDOR_DEBT: readonly AllowedVendorDebt[] = [
       ['bocha', 7],
       ['brave', 4],
       ['claude', 5],
-      ['anthropic', 2],
       ['minimax', 9],
       ['doubao', 1],
       ['searxng', 2],

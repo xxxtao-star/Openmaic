@@ -19,27 +19,26 @@ OPENAI_MODELS=                  # قائمة بيضاء اختيارية للن�
 
 بادئات الموفرين المدعومة:
 
-| البادئة             | الموفر                              |
-| ------------------- | ---------------------------------- |
-| `OPENAI_`           | OpenAI                             |
-| `AZURE_OPENAI_`     | Azure OpenAI                       |
-| `ANTHROPIC_`        | Anthropic                         |
-| `GOOGLE_`           | Google Gemini                     |
-| `DEEPSEEK_`         | DeepSeek                         |
-| `QWEN_`             | Alibaba Qwen                     |
-| `KIMI_`             | Moonshot Kimi                   |
-| `MINIMAX_`          | MiniMax (يستخدم نقطة نهاية متوافقة مع Anthropic افتراضيًا) |
-| `GLM_`              | Zhipu GLM                       |
-| `SILICONFLOW_`      | SiliconFlow                     |
-| `DOUBAO_`           | Doubao (ByteDance)              |
-| `OPENROUTER_`       | OpenRouter                     |
-| `GROK_`             | xAI Grok                       |
-| `TENCENT_`          | Tencent Hunyuan                |
-| `TENCENT_HUNYUAN_`  | Tencent Hunyuan (اسم بديل)    |
-| `XIAOMI_`           | Xiaomi MiMo                   |
-| `MIMO_`             | Xiaomi MiMo (اسم بديل)        |
-| `OLLAMA_`           | Ollama (محلي)                 |
-| `LEMONADE_`         | Lemonade (محلي)               |
+| البادئة              | الموفر                                                  |
+| -------------------- | ------------------------------------------------------- |
+| `OPENAI_`            | قناة متوافقة مع OpenAI (تتضمن كتالوج النماذج المحلية)   |
+| `AZURE_OPENAI_`      | Azure OpenAI                                            |
+| `ATLASCLOUD_`        | AtlasCloud                                              |
+| `DEEPSEEK_`          | DeepSeek                                                |
+| `QWEN_`              | Alibaba Qwen                                            |
+| `KIMI_`              | Moonshot Kimi                                           |
+| `MINIMAX_`           | MiniMax (نقطة نهاية متوافقة مع Anthropic افتراضيًا)     |
+| `GLM_`               | Zhipu GLM                                               |
+| `SILICONFLOW_`       | SiliconFlow                                             |
+| `DOUBAO_`            | Doubao (ByteDance)                                      |
+| `OPENROUTER_`        | OpenRouter                                              |
+| `GROK_`              | xAI Grok                                                |
+| `TENCENT_`           | Tencent Hunyuan                                         |
+| `TENCENT_HUNYUAN_`   | Tencent Hunyuan (اسم بديل)                              |
+| `XIAOMI_`            | Xiaomi MiMo                                             |
+| `MIMO_`              | Xiaomi MiMo (اسم بديل)                                  |
+| `OLLAMA_`            | Ollama (محلي)                                           |
+| `LEMONADE_`          | Lemonade (محلي)                                         |
 
 يستخدم Azure OpenAI اسم النشر كمعرف للنموذج:
 
@@ -203,7 +202,7 @@ ACCESS_CODE=your-secret-code
 عندما لا يرسل العميل نموذجًا، يستخدم API الخادم النموذج الافتراضي المحدد بـ `DEFAULT_MODEL`. صيغة النموذج هي `provider:model-id`، مثل:
 
 ```bash
-DEFAULT_MODEL=openai:gpt-5.5
+DEFAULT_MODEL=openai:qwen3.7-plus
 ```
 
 يمكن استخدام `MODEL_ROUTES` لتحديد نماذج مختلفة لمراحل توليد مختلفة؛ المراحل غير المحددة تستخدم النموذج المرسل من العميل أو `DEFAULT_MODEL`. هو كائن JSON، المفاتيح هي أسماء المراحل، والقيم إما سلسلة نموذج أو كائن يحتوي على `model` و `thinking`. قائمة المراحل الكاملة والأمثلة موجودة في [`.env.example`](https://github.com/THU-MAIC/OpenMAIC/blob/main/.env.example).
@@ -264,9 +263,9 @@ providers:
     apiKey: sk-...
     baseUrl: https://api.openai.com/v1
     models:
-      - gpt-5.5
-  anthropic:
-    apiKey: sk-ant-...
+      - qwen3.7-plus
+  deepseek:
+    apiKey: sk-...
 
 tts:
   doubao-tts:
