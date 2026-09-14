@@ -160,7 +160,7 @@ export function ProviderConfigPanel({
   const modelsLocked = !!providersConfig[provider.id]?.serverModels?.length;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       {/* Server-configured notice */}
       {isServerConfigured && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 p-3 text-sm text-blue-700 dark:text-blue-300">
