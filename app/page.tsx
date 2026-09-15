@@ -953,14 +953,18 @@ function HomePage() {
                   <span className="text-violet-400">✦</span>
                 </span>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <ModelSelectorPill
-                  onSettingsOpen={(section) => {
-                    setSettingsSection(section);
-                    setSettingsOpen(true);
-                  }}
-                />
-              </div>
+              {/* Video output runs on the pinned video provider, so the slide
+                  model selector has nothing to pick and stays hidden. */}
+              {videoMode ? null : (
+                <div className="flex shrink-0 items-center gap-2">
+                  <ModelSelectorPill
+                    onSettingsOpen={(section) => {
+                      setSettingsSection(section);
+                      setSettingsOpen(true);
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Prompt box */}

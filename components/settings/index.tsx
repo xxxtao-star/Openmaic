@@ -73,18 +73,30 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     setTimeout(() => setSaveStatus('idle'), 2000);
   };
 
-  const config = providersConfig[providerId];
+  // `providerId` is legitimately empty in State A — no provider is configured
+  // yet, so the store has nothing to select (see resolveLLMSelection). This
+  // dialog is where that gets fixed, so it must still render a channel to type
+  // an API key into; keying the panel off the empty selection left the whole
+  // dialog blank and made State A unrecoverable from the UI. Fall back to the
+  // first registered channel, which matches the store's own initial
+  // `providerId`. Once the key lands, the store resolves the selection to it.
+  const displayProviderId =
+    providerId && providersConfig[providerId]
+      ? providerId
+      : ((Object.keys(providersConfig)[0] as ProviderId | undefined) ?? providerId);
+
+  const config = providersConfig[displayProviderId];
   // The dialog exposes the one channel the store has selected — there is no
   // local tab state left to disagree with it.
   const selectedProvider = config
     ? {
-        id: providerId,
+        id: displayProviderId,
         name: config.name,
         type: config.type,
         defaultBaseUrl: config.defaultBaseUrl,
-        baseUrlPlaceholder: PROVIDERS[providerId]?.baseUrlPlaceholder,
-        supportsModelDiscovery: PROVIDERS[providerId]?.supportsModelDiscovery,
-        alternateBaseUrls: PROVIDERS[providerId]?.alternateBaseUrls,
+        baseUrlPlaceholder: PROVIDERS[displayProviderId]?.baseUrlPlaceholder,
+        supportsModelDiscovery: PROVIDERS[displayProviderId]?.supportsModelDiscovery,
+        alternateBaseUrls: PROVIDERS[displayProviderId]?.alternateBaseUrls,
         icon: config.icon,
         requiresApiKey: config.requiresApiKey,
         models: config.models,
@@ -104,7 +116,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   const handleAddModel = () => {
     setEditingModel({
-      providerId,
+      providerId: displayProviderId,
       modelIndex: null,
       model: {
         id: '',
@@ -236,19 +248,19 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               {selectedProvider && (
                 <ProviderConfigPanel
                   provider={selectedProvider}
-                  initialApiKey={providersConfig[providerId]?.apiKey || ''}
-                  initialBaseUrl={providersConfig[providerId]?.baseUrl || ''}
-                  initialRequiresApiKey={providersConfig[providerId]?.requiresApiKey ?? true}
+                  initialApiKey={providersConfig[displayProviderId]?.apiKey || ''}
+                  initialBaseUrl={providersConfig[displayProviderId]?.baseUrl || ''}
+                  initialRequiresApiKey={providersConfig[displayProviderId]?.requiresApiKey ?? true}
                   providersConfig={providersConfig}
                   onConfigChange={(apiKey, baseUrl, requiresApiKey) =>
-                    handleProviderConfigChange(providerId, apiKey, baseUrl, requiresApiKey)
+                    handleProviderConfigChange(displayProviderId, apiKey, baseUrl, requiresApiKey)
                   }
                   onSave={handleProviderConfigSave}
-                  onEditModel={(index) => handleEditModel(providerId, index)}
-                  onDeleteModel={(index) => handleDeleteModel(providerId, index)}
+                  onEditModel={(index) => handleEditModel(displayProviderId, index)}
+                  onDeleteModel={(index) => handleDeleteModel(displayProviderId, index)}
                   onAddModel={handleAddModel}
-                  onResetToDefault={() => handleResetProvider(providerId)}
-                  isBuiltIn={providersConfig[providerId]?.isBuiltIn ?? true}
+                  onResetToDefault={() => handleResetProvider(displayProviderId)}
+                  isBuiltIn={providersConfig[displayProviderId]?.isBuiltIn ?? true}
                 />
               )}
             </div>
@@ -286,12 +298,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         setEditingModel={setEditingModel}
         onSave={handleSaveModel}
         onAutoSave={handleAutoSaveModel}
-        providerId={providerId}
-        apiKey={providersConfig[providerId]?.apiKey || ''}
-        baseUrl={providersConfig[providerId]?.baseUrl}
-        providerType={providersConfig[providerId]?.type}
-        requiresApiKey={providersConfig[providerId]?.requiresApiKey}
-        isServerConfigured={providersConfig[providerId]?.isServerConfigured}
+        providerId={displayProviderId}
+        apiKey={providersConfig[displayProviderId]?.apiKey || ''}
+        baseUrl={providersConfig[displayProviderId]?.baseUrl}
+        providerType={providersConfig[displayProviderId]?.type}
+        requiresApiKey={providersConfig[displayProviderId]?.requiresApiKey}
+        isServerConfigured={providersConfig[displayProviderId]?.isServerConfigured}
       />
     </Dialog>
   );
