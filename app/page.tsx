@@ -10,6 +10,8 @@ import {
   ChevronRight,
   Clock,
   Copy,
+  Download,
+  Film,
   Folder,
   FolderPlus,
   Pencil,
@@ -33,6 +35,10 @@ import { cn } from '@/lib/utils';
 import { SettingsDialog } from '@/components/settings';
 import { GenerationToolbar, ModelSelectorPill } from '@/components/generation/generation-toolbar';
 import { DeepThinkingButton } from '@/components/generation/deep-thinking-button';
+import { OutputModeToggle, type OutputMode } from '@/components/generation/output-mode-toggle';
+import { iconControlMuted, labelPillMuted } from '@/components/generation/control-styles';
+import { PINNED_VIDEO_MODEL_ID, PINNED_VIDEO_PROVIDER_ID } from '@/lib/media/pinned-video';
+import { resolveMediaCredentialsFromSettings } from '@/lib/media/shared-credentials';
 import { AgentBar } from '@/components/agent/agent-bar';
 import Image from 'next/image';
 import { nanoid } from 'nanoid';
@@ -67,6 +73,14 @@ import {
 } from '@/lib/utils/stage-storage';
 import type { FolderRecord } from '@/lib/utils/database';
 import { displayNameWidth, FOLDER_NAME_MAX_WIDTH } from '@/lib/utils/folder-name-validation';
+import {
+  listGeneratedVideos,
+  saveGeneratedVideo,
+  renameGeneratedVideo,
+  deleteGeneratedVideo,
+  type GeneratedVideoListItem,
+} from '@/lib/utils/generated-video-storage';
+import { GeneratedVideoCard } from '@/components/discovery/generated-video-card';
 import { FolderCard } from '@/components/discovery/folder-card';
 import { NewFolderDialog } from '@/components/discovery/folder-dialogs';
 import { MoveToFolderMenu } from '@/components/discovery/move-to-folder-menu';
@@ -90,6 +104,7 @@ const log = createLogger('Home');
 const WEB_SEARCH_STORAGE_KEY = 'webSearchEnabled';
 const RECENT_OPEN_STORAGE_KEY = 'recentClassroomsOpen';
 const INTERACTIVE_MODE_STORAGE_KEY = 'interactiveModeEnabled';
+const OUTPUT_MODE_STORAGE_KEY = 'composerOutputMode';
 
 // PPTX import is still scaffolding: `useImportPptx` has no `onImported` consumer
 // yet, so the flow only logs the parsed slides. Hide the entry point behind a
@@ -105,6 +120,8 @@ interface FormState {
   webSearch: boolean;
   interactiveMode: boolean;
   vocationalTestMode: boolean;
+  /** What the primary action produces: the slide course, or a single video. */
+  outputMode: OutputMode;
 }
 
 const initialFormState: FormState = {
@@ -113,6 +130,7 @@ const initialFormState: FormState = {
   webSearch: false,
   interactiveMode: false,
   vocationalTestMode: false,
+  outputMode: 'slides',
 };
 
 function HomePage() {
@@ -186,9 +204,11 @@ function HomePage() {
     try {
       const savedWebSearch = localStorage.getItem(WEB_SEARCH_STORAGE_KEY);
       const savedInteractiveMode = localStorage.getItem(INTERACTIVE_MODE_STORAGE_KEY);
+      const savedOutputMode = localStorage.getItem(OUTPUT_MODE_STORAGE_KEY);
       const updates: Partial<FormState> = {};
       if (savedWebSearch === 'true') updates.webSearch = true;
       if (savedInteractiveMode === 'true') updates.interactiveMode = true;
+      if (savedOutputMode === 'video') updates.outputMode = 'video';
       if (Object.keys(updates).length > 0) {
         setForm((prev) => ({ ...prev, ...updates }));
       }
@@ -216,6 +236,15 @@ function HomePage() {
   // toolbar's add/remove affordances, so the session is always built from a
   // set that cannot change under it.
   const [preparingGenerate, setPreparingGenerate] = useState(false);
+  // Video output mode renders its result in place instead of navigating, so the
+  // finished clip lives in page state rather than in a generation session.
+  const [generatingVideo, setGeneratingVideo] = useState(false);
+  const [videoResult, setVideoResult] = useState<{ url: string; poster?: string } | null>(null);
+  // Standalone clips from video output mode. Listed in the same grid as
+  // courses; kept in their own state because they are not documents and carry
+  // no scenes, outline or folder membership.
+  const [generatedVideos, setGeneratedVideos] = useState<GeneratedVideoListItem[]>([]);
+  const [pendingVideoDeleteId, setPendingVideoDeleteId] = useState<string | null>(null);
   const [classrooms, setClassrooms] = useState<StageListItem[]>([]);
   const [thumbnails, setThumbnails] = useState<Record<string, Slide>>({});
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -274,6 +303,34 @@ function HomePage() {
     }
   };
 
+  const loadGeneratedVideos = async () => {
+    try {
+      setGeneratedVideos(await listGeneratedVideos());
+    } catch (err) {
+      log.error('Failed to load generated videos:', err);
+    }
+  };
+
+  const handleRenameVideo = async (id: string, prompt: string) => {
+    try {
+      await renameGeneratedVideo(id, prompt);
+      setGeneratedVideos((prev) => prev.map((v) => (v.id === id ? { ...v, prompt } : v)));
+    } catch (err) {
+      log.error('Failed to rename generated video:', err);
+      toast.error(t('classroom.renameFailed'));
+    }
+  };
+
+  const handleDeleteVideo = async (id: string) => {
+    try {
+      await deleteGeneratedVideo(id);
+      setGeneratedVideos((prev) => prev.filter((v) => v.id !== id));
+    } catch (err) {
+      log.error('Failed to delete generated video:', err);
+      toast.error(t('classroom.videoDeleteFailed'));
+    }
+  };
+
   // Capture the active folder when an import starts so the imported course
   // lands in that folder, not whichever folder is active when the async import
   // resolves (the user may have navigated away in the meantime).
@@ -317,7 +374,9 @@ function HomePage() {
     // Read sessionStorage on the client only (avoids SSR hydration mismatch).
     // Both reads resolve before flipping `hydrated`, so the hero layout does
     // not thrash as each lands independently.
-    void Promise.all([loadClassrooms(), loadFolders()]).finally(() => setHydrated(true));
+    void Promise.all([loadClassrooms(), loadFolders(), loadGeneratedVideos()]).finally(() =>
+      setHydrated(true),
+    );
 
     return () => {
       revokeThumbnailSlideMediaUrls(thumbnailsRef.current);
@@ -452,6 +511,15 @@ function HomePage() {
       (c) => c.folderId === undefined || !folderNameById.has(c.folderId),
     );
   }, [filteredClassrooms, isSearching, currentFolderId, folderNameById]);
+
+  // Clips carry no folder membership, so they belong to the root view only.
+  // Searching matches their prompt, which is also their title.
+  const visibleVideos = useMemo(() => {
+    const q = deferredSearchQuery.trim().toLowerCase();
+    if (q) return generatedVideos.filter((v) => v.prompt.toLowerCase().includes(q));
+    if (currentFolderId) return [];
+    return generatedVideos;
+  }, [generatedVideos, deferredSearchQuery, currentFolderId]);
   const currentFolderClassrooms = useMemo(
     () => (currentFolderId ? classrooms.filter((c) => c.folderId === currentFolderId) : []),
     [classrooms, currentFolderId],
@@ -486,6 +554,7 @@ function HomePage() {
       if (field === 'webSearch') localStorage.setItem(WEB_SEARCH_STORAGE_KEY, String(value));
       if (field === 'interactiveMode')
         localStorage.setItem(INTERACTIVE_MODE_STORAGE_KEY, String(value));
+      if (field === 'outputMode') localStorage.setItem(OUTPUT_MODE_STORAGE_KEY, String(value));
       if (field === 'requirement') updateRequirementCache(value as string);
     } catch {
       /* ignore */
@@ -655,6 +724,86 @@ function HomePage() {
     }
   };
 
+  /**
+   * Video output mode.
+   *
+   * Sends the textarea prompt straight to the pinned video provider: no model
+   * selection, no material ingest, no generation session and no navigation — the
+   * finished clip plays under the composer. The slide pipeline is untouched by
+   * this path.
+   */
+  const handleGenerateVideo = async () => {
+    if (preparingGenerate || generatingVideo) return;
+    if (!form.requirement.trim()) {
+      setError(t('upload.requirementRequired'));
+      return;
+    }
+
+    setError(null);
+    setVideoResult(null);
+    setGeneratingVideo(true);
+    try {
+      // A managed provider is admin-owned and the route ignores these. Otherwise
+      // this falls back to the language-model channel's key, which is the only
+      // credential the settings dialog still exposes.
+      const credentials = resolveMediaCredentialsFromSettings(
+        useSettingsStore.getState(),
+        'video',
+        PINNED_VIDEO_PROVIDER_ID,
+      );
+
+      const response = await fetch('/api/generate/video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-video-provider': PINNED_VIDEO_PROVIDER_ID,
+          'x-video-model': PINNED_VIDEO_MODEL_ID,
+          'x-api-key': credentials.apiKey,
+          'x-base-url': credentials.baseUrl,
+        },
+        // Duration, aspect ratio and resolution are left to
+        // `normalizeVideoOptions`, which fills in what this provider supports.
+        body: JSON.stringify({ prompt: form.requirement.trim() }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || `Video API returned ${response.status}`);
+      }
+      const url = data.result?.url as string | undefined;
+      if (!url) throw new Error(t('upload.generateFailed'));
+
+      setVideoResult({ url, poster: data.result?.poster });
+
+      // File the clip into the library. The provider URL above stays playable in
+      // place, so a failed save costs the card, not the clip the user is
+      // watching — surface it as a warning rather than the generation error.
+      try {
+        const saved = await saveGeneratedVideo({
+          prompt: form.requirement.trim(),
+          url,
+          providerId: PINNED_VIDEO_PROVIDER_ID,
+          modelId: PINNED_VIDEO_MODEL_ID,
+          durationSeconds: data.result?.durationSeconds,
+          width: data.result?.width,
+          height: data.result?.height,
+        });
+        setGeneratedVideos((prev) => [saved, ...prev]);
+        // The library section remembers being collapsed, and a card the user
+        // cannot see is the same as no card at all.
+        if (!recentOpen) persistRecentOpen(true);
+      } catch (saveErr) {
+        log.error('Failed to save generated video to the library:', saveErr);
+        toast.warning(t('classroom.videoSaveFailed'));
+      }
+    } catch (err) {
+      log.error('Error generating video:', err);
+      setError(err instanceof Error ? err.message : t('upload.generateFailed'));
+    } finally {
+      setGeneratingVideo(false);
+    }
+  };
+
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -667,12 +816,18 @@ function HomePage() {
     return date.toLocaleDateString();
   };
 
-  const canGenerate = !!form.requirement.trim() && hasUsableProvider;
+  const videoMode = form.outputMode === 'video';
+  // Video mode talks to a pinned video provider, so an LLM provider is beside
+  // the point there — only the slide pipeline needs one.
+  const canGenerate = !!form.requirement.trim() && (videoMode || hasUsableProvider);
+  const busy = preparingGenerate || generatingVideo;
+
+  const submitComposer = () => (videoMode ? handleGenerateVideo() : handleGenerate());
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();
-      if (canGenerate && !preparingGenerate) handleGenerate();
+      if (canGenerate && !busy) submitComposer();
     }
   };
 
@@ -842,23 +997,31 @@ function HomePage() {
               {/* Agents */}
               <AgentBar />
 
-              {/* Right cluster: deep thinking + primary action */}
+              {/* Right cluster: output mode + deep thinking + primary action */}
               <div className="ml-auto flex items-center gap-2">
+                <OutputModeToggle
+                  value={form.outputMode}
+                  onChange={(next) => updateForm('outputMode', next)}
+                />
                 <DeepThinkingButton />
                 <button
-                  onClick={handleGenerate}
-                  disabled={!canGenerate || preparingGenerate}
+                  onClick={submitComposer}
+                  disabled={!canGenerate || busy}
                   className={cn(
                     'shrink-0 h-10 rounded-full flex items-center justify-center gap-2 transition-all px-6',
-                    canGenerate && !preparingGenerate
+                    canGenerate && !busy
                       ? 'bg-gradient-to-r from-sky-500 via-indigo-500 to-fuchsia-500 text-white hover:opacity-90 shadow-sm shadow-indigo-500/25 cursor-pointer'
                       : 'bg-muted text-muted-foreground/40 dark:text-muted-foreground cursor-not-allowed',
                   )}
                 >
                   <span className="text-[14px] font-semibold">
-                    {preparingGenerate ? t('stage.generating') : t('toolbar.startLearning')}
+                    {busy
+                      ? t('stage.generating')
+                      : videoMode
+                        ? t('toolbar.generateVideo')
+                        : t('toolbar.startLearning')}
                   </span>
-                  {preparingGenerate ? (
+                  {busy ? (
                     <Loader2 className="size-[18px] animate-spin" />
                   ) : (
                     <ArrowRight className="size-[18px]" />
@@ -879,6 +1042,52 @@ function HomePage() {
               className="mt-3 w-full p-3 bg-destructive/10 border border-destructive/20 rounded-lg"
             >
               <p className="text-sm text-destructive">{error}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Generated video ── */}
+        <AnimatePresence>
+          {videoResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              className="mt-3 w-full rounded-2xl border border-border/60 bg-white/80 p-3 backdrop-blur-xl dark:border-border dark:bg-slate-900/70"
+            >
+              <div className="mb-2.5 flex items-center gap-2">
+                <Film className="size-4 shrink-0 text-violet-500" />
+                <span className="truncate text-[13px] font-medium text-foreground/85">
+                  {t('toolbar.videoResultTitle')}
+                </span>
+                <a
+                  href={videoResult.url}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(labelPillMuted, 'ml-auto')}
+                >
+                  <Download className="size-4 shrink-0" />
+                  <span className="hidden whitespace-nowrap sm:inline">
+                    {t('toolbar.videoDownload')}
+                  </span>
+                </a>
+                <button
+                  type="button"
+                  aria-label={t('common.close')}
+                  onClick={() => setVideoResult(null)}
+                  className={iconControlMuted}
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <video
+                src={videoResult.url}
+                poster={videoResult.poster}
+                controls
+                playsInline
+                className="w-full rounded-xl bg-black"
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -1062,7 +1271,7 @@ function HomePage() {
                 transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
                 className="w-full overflow-hidden"
               >
-                {folders.length === 0 && classrooms.length === 0 ? (
+                {folders.length === 0 && classrooms.length === 0 && generatedVideos.length === 0 ? (
                   <div className="pt-8 pb-2 text-center text-[13px] text-muted-foreground/60 dark:text-muted-foreground">
                     {t('classroom.emptyLibraryHint')}
                   </div>
@@ -1073,7 +1282,7 @@ function HomePage() {
                       {t('classroom.emptyFolderHint')}
                     </p>
                   </div>
-                ) : isSearching && filteredClassrooms.length === 0 ? (
+                ) : isSearching && filteredClassrooms.length === 0 && visibleVideos.length === 0 ? (
                   <div className="pt-8 pb-2 text-center text-[13px] text-muted-foreground/60 dark:text-muted-foreground">
                     {t('classroom.searchEmpty')}
                   </div>
@@ -1099,7 +1308,7 @@ function HomePage() {
                           {t('classroom.searchResults')}
                         </span>
                         <span className="ml-1.5 text-[12px] text-muted-foreground tabular-nums">
-                          ({filteredClassrooms.length})
+                          ({filteredClassrooms.length + visibleVideos.length})
                         </span>
                       </div>
                     )}
@@ -1140,6 +1349,28 @@ function HomePage() {
                               />
                             </motion.div>
                           ))}
+
+                        {/* Standalone clips. Newest-first and never filed in
+                            a folder, so they lead the tiles in the root view. */}
+                        {visibleVideos.map((video, i) => (
+                          <motion.div
+                            key={video.id}
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.04, duration: 0.35, ease: 'easeOut' }}
+                          >
+                            <GeneratedVideoCard
+                              video={video}
+                              formatDate={formatDate}
+                              onRename={handleRenameVideo}
+                              onDelete={handleDeleteVideo}
+                              confirmingDelete={pendingVideoDeleteId === video.id}
+                              onRequestDelete={() => setPendingVideoDeleteId(video.id)}
+                              onConfirmDelete={() => setPendingVideoDeleteId(null)}
+                              onCancelDelete={() => setPendingVideoDeleteId(null)}
+                            />
+                          </motion.div>
+                        ))}
 
                         {/* Course tiles for the active view. */}
                         {visibleClassrooms.map((classroom, i) => (

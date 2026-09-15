@@ -6,6 +6,7 @@ import { generateWithKling } from '@/lib/media/adapters/kling-adapter';
 import { generateWithMiniMaxVideo } from '@/lib/media/adapters/minimax-video-adapter';
 import { generateWithSeedance } from '@/lib/media/adapters/seedance-adapter';
 import { generateWithVeo } from '@/lib/media/adapters/veo-adapter';
+import { generateWithWan3Video } from '@/lib/media/adapters/wan3-video-adapter';
 
 const fetchMock = vi.fn();
 
@@ -15,6 +16,22 @@ function jsonResponse(data: unknown, status = 200): Response {
     headers: { 'Content-Type': 'application/json' },
   });
 }
+
+function binaryResponse(bytes: Uint8Array, contentType = 'video/mp4', status = 200): Response {
+  // BodyInit does not accept a Uint8Array under this lib target; its backing
+  // buffer is an equivalent body.
+  return new Response(bytes.buffer as ArrayBuffer, {
+    status,
+    headers: { 'Content-Type': contentType },
+  });
+}
+
+const WAN3_CONFIG = {
+  providerId: 'wan3-video' as const,
+  apiKey: 'wan3-key',
+  baseUrl: 'https://wan3.example/v1',
+  model: 'wan3.0-video',
+};
 
 describe('polled video adapter compatibility', () => {
   beforeEach(() => {
@@ -530,5 +547,133 @@ describe('polled video adapter compatibility', () => {
 
     await rejection;
     expect(fetchMock).toHaveBeenCalledTimes(121);
+  });
+
+  it('reads the Wan 3.0 asset URL out of a nested array envelope', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'wan3-nested' })).mockResolvedValueOnce(
+      jsonResponse({
+        id: 'wan3-nested',
+        status: 'completed',
+        data: [{ video_url: 'https://cdn.example.com/wan3.mp4', duration: 7 }],
+      }),
+    );
+
+    const promise = generateWithWan3Video(WAN3_CONFIG, {
+      prompt: 'a paper city',
+      resolution: '720p',
+      duration: 5,
+    });
+
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await expect(promise).resolves.toEqual({
+      url: 'https://cdn.example.com/wan3.mp4',
+      duration: 5,
+      width: 1280,
+      height: 720,
+    });
+    expect(fetchMock.mock.calls[1][0]).toBe('https://wan3.example/v1/videos/wan3-nested');
+  });
+
+  it('prefers the clip over a companion thumbnail on the same Wan 3.0 body', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'wan3-thumb' })).mockResolvedValueOnce(
+      jsonResponse({
+        id: 'wan3-thumb',
+        status: 'succeeded',
+        thumbnail_url: 'https://cdn.example.com/thumb.jpg',
+        output: { video_url: 'https://cdn.example.com/clip.mp4' },
+      }),
+    );
+
+    const promise = generateWithWan3Video(WAN3_CONFIG, { prompt: 'a paper city' });
+
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await expect(promise).resolves.toMatchObject({ url: 'https://cdn.example.com/clip.mp4' });
+  });
+
+  it('inlines Wan 3.0 bytes from /content when a completed task carries no URL', async () => {
+    const bytes = new Uint8Array([0, 1, 2, 3, 4]);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ id: 'wan3-content' }))
+      .mockResolvedValueOnce(jsonResponse({ id: 'wan3-content', status: 'completed' }))
+      .mockResolvedValueOnce(binaryResponse(bytes));
+
+    const promise = generateWithWan3Video(WAN3_CONFIG, {
+      prompt: 'a paper city',
+      resolution: '1080p',
+    });
+
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await expect(promise).resolves.toEqual({
+      url: `data:video/mp4;base64,${Buffer.from(bytes).toString('base64')}`,
+      duration: 5,
+      width: 1920,
+      height: 1080,
+    });
+    expect(fetchMock.mock.calls[2][0]).toBe('https://wan3.example/v1/videos/wan3-content/content');
+  });
+
+  it('carries the Wan 3.0 poll body when the /content fallback also fails', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ id: 'wan3-broken' }))
+      .mockResolvedValueOnce(
+        jsonResponse({ id: 'wan3-broken', status: 'completed', progress: 100 }),
+      )
+      .mockResolvedValueOnce(new Response('no such route', { status: 404 }));
+
+    const promise = generateWithWan3Video(WAN3_CONFIG, { prompt: 'a paper city' });
+    const rejection = expect(promise).rejects.toThrow(
+      /no video URL returned[\s\S]*\/content fallback failed \([\s\S]*404[\s\S]*\)[\s\S]*"status":"completed","progress":100/,
+    );
+
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await rejection;
+  });
+
+  it('does not mistake an unrelated URL on a pending Wan 3.0 body for the clip', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ id: 'wan3-pending' }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          id: 'wan3-pending',
+          status: 'processing',
+          callback_url: 'https://hooks.example.com/notify',
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          id: 'wan3-pending',
+          status: 'completed',
+          video: { url: 'https://cdn.example.com/late.mp4' },
+        }),
+      );
+
+    const promise = generateWithWan3Video(WAN3_CONFIG, { prompt: 'a paper city' });
+
+    await vi.advanceTimersByTimeAsync(20_000);
+
+    await expect(promise).resolves.toMatchObject({ url: 'https://cdn.example.com/late.mp4' });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('preserves the Wan 3.0 timeout message with the last status', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ id: 'wan3-timeout' }))
+      .mockImplementation(() =>
+        Promise.resolve(jsonResponse({ id: 'wan3-timeout', status: 'processing' })),
+      );
+
+    const promise = generateWithWan3Video(WAN3_CONFIG, { prompt: 'a paper city' });
+    const rejection = expect(promise).rejects.toThrow(
+      'Wan 3.0 video generation timed out after 600s (task: wan3-timeout, last status: processing)',
+    );
+
+    await vi.advanceTimersByTimeAsync(600_000);
+
+    await rejection;
+    expect(fetchMock).toHaveBeenCalledTimes(61);
   });
 });

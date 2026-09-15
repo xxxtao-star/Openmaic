@@ -18,6 +18,7 @@ import {
 } from './adapters/minimax-video-adapter';
 import { generateWithGrokVideo, testGrokVideoConnectivity } from './adapters/grok-video-adapter';
 import { generateWithHappyHorse, testHappyHorseConnectivity } from './adapters/happyhorse-adapter';
+import { generateWithWan3Video, testWan3VideoConnectivity } from './adapters/wan3-video-adapter';
 
 export const VIDEO_PROVIDERS: Record<VideoProviderId, VideoProviderConfig> = {
   seedance: {
@@ -120,6 +121,19 @@ export const VIDEO_PROVIDERS: Record<VideoProviderId, VideoProviderConfig> = {
     supportedResolutions: ['720p', '1080p'],
     maxDuration: 15,
   },
+  'wan3-video': {
+    id: 'wan3-video',
+    name: 'Wan 3.0 Video',
+    requiresApiKey: true,
+    defaultBaseUrl: 'https://yibuapi.com/v1',
+    models: [{ id: 'wan3.0-video', name: 'Wan 3.0' }],
+    // The submit payload carries only a resolution tier and a duration, so
+    // 16:9 is the only aspect ratio this provider can express.
+    supportedAspectRatios: ['16:9'],
+    supportedDurations: [5, 10, 15],
+    supportedResolutions: ['720p', '1080p'],
+    maxDuration: 15,
+  },
 };
 
 export async function testVideoConnectivity(
@@ -138,6 +152,8 @@ export async function testVideoConnectivity(
       return testGrokVideoConnectivity(config);
     case 'happyhorse':
       return testHappyHorseConnectivity(config);
+    case 'wan3-video':
+      return testWan3VideoConnectivity(config);
     default:
       return {
         success: false,
@@ -205,6 +221,8 @@ export async function generateVideo(
       return generateWithGrokVideo(config, options);
     case 'happyhorse':
       return generateWithHappyHorse(config, options);
+    case 'wan3-video':
+      return generateWithWan3Video(config, options);
     default:
       throw new Error(`Unsupported video provider: ${config.providerId}`);
   }

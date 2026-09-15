@@ -12,6 +12,7 @@ import { db, mediaFileKey } from '@/lib/utils/database';
 import type { SceneOutline } from '@/lib/types/generation';
 import type { MediaGenerationRequest } from '@/lib/media/types';
 import { fetchProxiedMediaUrl } from '@/lib/media/proxy-media-cache';
+import { resolveMediaCredentialsFromSettings } from '@/lib/media/shared-credentials';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('MediaOrchestrator');
@@ -271,7 +272,7 @@ async function callImageApi(
   abortSignal?: AbortSignal,
 ): Promise<{ url: string; ossUrl?: string }> {
   const settings = useSettingsStore.getState();
-  const providerConfig = settings.imageProvidersConfig?.[settings.imageProviderId];
+  const credentials = resolveMediaCredentialsFromSettings(settings, 'image');
 
   const response = await fetch('/api/generate/image', {
     method: 'POST',
@@ -279,8 +280,8 @@ async function callImageApi(
       'Content-Type': 'application/json',
       'x-image-provider': settings.imageProviderId || '',
       'x-image-model': settings.imageModelId || '',
-      'x-api-key': providerConfig?.apiKey || '',
-      'x-base-url': providerConfig?.baseUrl || '',
+      'x-api-key': credentials.apiKey,
+      'x-base-url': credentials.baseUrl,
     },
     body: JSON.stringify({
       prompt: req.prompt,
@@ -321,7 +322,7 @@ async function callVideoApi(
   duration?: number;
 }> {
   const settings = useSettingsStore.getState();
-  const providerConfig = settings.videoProvidersConfig?.[settings.videoProviderId];
+  const credentials = resolveMediaCredentialsFromSettings(settings, 'video');
 
   const response = await fetch('/api/generate/video', {
     method: 'POST',
@@ -329,8 +330,8 @@ async function callVideoApi(
       'Content-Type': 'application/json',
       'x-video-provider': settings.videoProviderId || '',
       'x-video-model': settings.videoModelId || '',
-      'x-api-key': providerConfig?.apiKey || '',
-      'x-base-url': providerConfig?.baseUrl || '',
+      'x-api-key': credentials.apiKey,
+      'x-base-url': credentials.baseUrl,
     },
     body: JSON.stringify({
       prompt: req.prompt,

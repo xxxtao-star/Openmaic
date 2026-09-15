@@ -106,6 +106,32 @@ export interface StageFolderMembership {
 }
 
 /**
+ * A standalone clip from the composer's video output mode.
+ *
+ * That mode produces one video and no document: no scenes, no outline, no chat.
+ * Writing it into the stage tables would mean a course with zero scenes that
+ * the classroom route cannot open, so the library lists these rows alongside
+ * courses instead of pretending they are courses. Device-local, like folder
+ * membership — the clip's bytes live here so the card survives the provider
+ * URL expiring.
+ */
+export interface GeneratedVideoRecord {
+  id: string; // Primary key
+  /** The composer prompt, also the card's title. */
+  prompt: string;
+  blob: Blob; // Video binary, downloaded through the media proxy
+  mimeType: string;
+  size: number;
+  poster?: Blob; // First-frame thumbnail, captured client-side
+  durationSeconds?: number;
+  width?: number;
+  height?: number;
+  providerId: string;
+  modelId?: string;
+  createdAt: number; // timestamp
+}
+
+/**
  * Scene table - Scene/page data
  */
 export interface SceneRecord {
@@ -297,7 +323,7 @@ export function mediaFileKey(stageId: string, elementId: string): string {
 // ==================== Database Definition ====================
 
 const DATABASE_NAME = 'MAIC-Database';
-const _DATABASE_VERSION = 17;
+const _DATABASE_VERSION = 18;
 
 /**
  * MAIC Database Instance
@@ -320,6 +346,7 @@ class MAICDatabase extends Dexie {
   agentEditSessions!: EntityTable<LegacyAgentEditSessionRecord, 'id'>;
   folders!: EntityTable<FolderRecord, 'id'>;
   stageFolders!: EntityTable<StageFolderMembership, 'stageId'>;
+  generatedVideos!: EntityTable<GeneratedVideoRecord, 'id'>;
 
   constructor() {
     super(DATABASE_NAME);
@@ -562,6 +589,14 @@ class MAICDatabase extends Dexie {
     this.version(17).stores({
       folders: 'id, order',
       stageFolders: 'stageId, folderId',
+    });
+
+    // Version 18: Standalone clips from the composer's video output mode. Kept
+    // out of the stage tables because such a clip is not a document — see
+    // `GeneratedVideoRecord`. Indexed by createdAt so the library can list
+    // newest-first without loading every blob.
+    this.version(18).stores({
+      generatedVideos: 'id, createdAt',
     });
   }
 }

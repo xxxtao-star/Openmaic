@@ -35,6 +35,7 @@ const CAP_ENV_PREFIXES = [
   'VIDEO_MINIMAX',
   'VIDEO_GROK',
   'VIDEO_HAPPYHORSE',
+  'VIDEO_WAN3',
 ];
 
 function clearCapabilityEnv() {

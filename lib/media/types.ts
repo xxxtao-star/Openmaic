@@ -197,7 +197,8 @@ export type VideoProviderId =
   | 'veo'
   | 'minimax-video'
   | 'grok-video'
-  | 'happyhorse';
+  | 'happyhorse'
+  | 'wan3-video';
 // Add new video providers below (uncomment and modify):
 // | 'runway'
 // | 'pika'
